@@ -1,0 +1,15 @@
+name = "washtag-api"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Per-install rate limit: 30 requests a minute. Raise it once you see real usage.
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
+
+# Secrets are NOT stored here. Set them with:
+#   npx wrangler secret put ANTHROPIC_API_KEY
+#   npx wrangler secret put BARCODE_LOOKUP_API_KEY
+#   npx wrangler secret put APP_TOKEN

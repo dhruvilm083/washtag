@@ -1,0 +1,10 @@
+ios/Config/Secrets.xcconfig
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcworkspace/xcuserdata/
+ios/DerivedData/
+ios/build/
+ios/.DS_Store
+backend/node_modules/
+backend/.wrangler/
+backend/dist/
+backend/.dev.vars

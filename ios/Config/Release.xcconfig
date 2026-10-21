@@ -1,0 +1,3 @@
+// Release builds read your real values from Secrets.xcconfig (git-ignored).
+WASHTAG_BUNDLE_ID = com.example.washtag
+#include? "Secrets.xcconfig"

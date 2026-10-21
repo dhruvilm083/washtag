@@ -1,0 +1,6 @@
+// Debug builds use Google's official TEST ad IDs, so you can never click your own live ads by accident.
+WASHTAG_BUNDLE_ID = com.example.washtag
+#include? "Secrets.xcconfig"
+
+GAD_APP_ID = ca-app-pub-3940256099942544~1458002511
+GAD_APP_OPEN_UNIT = ca-app-pub-3940256099942544/5575463023
