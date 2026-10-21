@@ -1,7 +1,7 @@
 import Foundation
 import UIKit
 
-/// Talks to the Washtag Worker. The Worker holds the Anthropic and Barcode Lookup keys.
+/// Talks to the Washtag Worker. The Worker holds the Gemini API key.
 struct APIClient {
     static let shared = APIClient()
 
@@ -28,10 +28,16 @@ struct APIClient {
         try await post("v1/digits", body: ["image": try jpegBase64(image)])
     }
 
-    func product(code: String, context: String?) async throws -> ProductInfo {
-        var q = [URLQueryItem(name: "code", value: code)]
-        if let context, !context.isEmpty { q.append(URLQueryItem(name: "context", value: String(context.prefix(300)))) }
-        return try await send(path: "v1/product", method: "GET", query: q, body: nil)
+    struct Enrichment: Decodable { var category: String?; var careNotes: [String]?; var detergentUse: ProductInfo.DetergentUse? }
+
+    /// Adds care notes to a product found in a barcode database.
+    func enrich(product: ProductInfo, context: String?) async throws -> Enrichment {
+        struct Record: Encodable { var title, brand, category, description, color: String? }
+        struct Body: Encodable { var product: Record; var context: String? }
+        let record = Record(title: product.productName, brand: product.brand, category: product.category,
+                            description: product.description, color: product.color)
+        return try await send(path: "v1/enrich", method: "POST", query: [],
+                              body: try JSONEncoder().encode(Body(product: record, context: context.map { String($0.prefix(300)) })))
     }
 
     func suggest(structured: StructuredCare?, needs: [String], fibres: String?, type: String?) async throws -> Suggestions {

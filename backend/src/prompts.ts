@@ -1,6 +1,6 @@
 // Prompts carried over from the Washtag prototype, adjusted for the native app.
-// Product identity now comes from Barcode Lookup, so the product prompt only
-// adds care guidance on top of real catalogue data.
+// Product identity comes from free barcode databases (looked up in the app), so the
+// enrich prompt only adds care guidance on top of that catalogue data.
 
 export const LABEL_PROMPT = `You are an expert textile care-label reader (ISO 3758 / GINETEX, ASTM D5489, Japanese JIS L 0001, and text-only labels in any language).
 Look at the attached photo. It may show a garment care label, a hang tag, or packaging where care symbols sit beside a barcode.

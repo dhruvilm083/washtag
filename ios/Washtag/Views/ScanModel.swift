@@ -90,8 +90,7 @@ final class ScanModel {
     }
 
     private func lookup(_ code: String, context: String?) async -> ProductInfo {
-        do { return try await api.product(code: code, context: context) }
-        catch { return ProductInfo(found: false, confidence: 0, basis: "Lookup failed: \(error.localizedDescription)") }
+        await ProductLookup.lookup(code, context: context)
     }
 
     private func run(_ work: @escaping @MainActor () async throws -> Void) {

@@ -294,7 +294,17 @@ struct ProductPanel: View {
                 }
             }
             .padding(.top, 6)
-            Text("Product data from Barcode Lookup.").font(.caption2).foregroundStyle(Theme.ink2)
+            Text(productCredit).font(.caption2).foregroundStyle(Theme.ink2)
+        }
+    }
+
+    private var productCredit: String {
+        switch rec.product?.source {
+        case "upcitemdb": return "Product data from UPCitemdb."
+        case let s? where s.contains("openproductsfacts"): return "Product data from Open Products Facts (ODbL)."
+        case let s? where s.contains("openbeautyfacts"): return "Product data from Open Beauty Facts (ODbL)."
+        case let s? where s.contains("openfoodfacts"): return "Product data from Open Food Facts (ODbL)."
+        default: return "Searched UPCitemdb and the Open Facts databases."
         }
     }
 
@@ -306,7 +316,8 @@ struct ProductPanel: View {
         func q(_ s: String) -> String { s.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? s }
         if let brand, let u = URL(string: "https://www.google.com/search?q=" + q("\(brand) \(name) care instructions")) { out.append(("Manufacturer care info", u)) }
         if let code = rec.upc?.code, !code.isEmpty {
-            if let u = URL(string: "https://www.barcodelookup.com/\(code)") { out.append(("Barcode Lookup", u)) }
+            if let u = URL(string: "https://www.upcitemdb.com/upc/\(code)") { out.append(("UPCitemdb", u)) }
+            if let u = URL(string: "https://world.openproductsfacts.org/product/\(code)") { out.append(("Open Products Facts", u)) }
             if let u = URL(string: "https://www.google.com/search?q=\(code)") { out.append(("Web search", u)) }
         }
         return out

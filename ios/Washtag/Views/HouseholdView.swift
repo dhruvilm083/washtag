@@ -45,7 +45,7 @@ struct HouseholdView: View {
                     Link("Report an inappropriate ad", destination: URL(string: "mailto:support@example.com?subject=Washtag%20ad%20report")!)
                 }
                 Section {
-                    Text("Care labels are read by Claude (Anthropic) and products are looked up in the Barcode Lookup database. Each result shows how confident it is. Detergent amounts are starting points — your detergent’s cap or scoop markings win. Your index stays on this phone.")
+                    Text("Care labels are read by Google Gemini, and products are looked up in UPCitemdb and the Open Products, Beauty and Food Facts databases. Each result shows how confident it is. Detergent amounts are starting points — your detergent’s cap or scoop markings win. Your index stays on this phone.")
                         .font(.footnote).foregroundStyle(Theme.ink2)
                 }
             }
