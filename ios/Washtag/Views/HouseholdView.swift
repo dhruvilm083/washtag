@@ -30,6 +30,13 @@ struct HouseholdView: View {
                         }
                     }
                 }
+                Section("Machines") {
+                    NavigationLink {
+                        AppliancesView()
+                    } label: {
+                        LabeledContent("Washer & dryer", value: [store.washer?.title, store.dryer?.title].compactMap { $0 }.joined(separator: " · ").nonEmpty ?? "Not added")
+                    }
+                }
                 Section("Units") {
                     Picker("Units", selection: $store.units) {
                         Text("°C and ml").tag(Units.metric)
@@ -61,4 +68,8 @@ struct HouseholdView: View {
         store.addPerson(newName)
         newName = ""
     }
+}
+
+extension String {
+    var nonEmpty: String? { isEmpty ? nil : self }
 }

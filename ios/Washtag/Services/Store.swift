@@ -9,22 +9,27 @@ final class AppStore {
     var people: [Person] = []
     var units: Units = .metric { didSet { save() } }
     var load = LoadSettings() { didSet { save() } }
+    var washer: Appliance? { didSet { save() } }
+    var dryer: Appliance? { didSet { save() } }
 
-    private struct Snapshot: Codable { var items: [ScanRecord]; var people: [Person]; var units: Units; var load: LoadSettings }
+    private struct Snapshot: Codable {
+        var items: [ScanRecord]; var people: [Person]; var units: Units; var load: LoadSettings
+        var washer: Appliance?; var dryer: Appliance?
+    }
     private let url = URL.documentsDirectory.appending(path: "washtag.json")
     private var loading = false
 
     init() {
         loading = true
         if let data = try? Data(contentsOf: url), let s = try? JSONDecoder().decode(Snapshot.self, from: data) {
-            items = s.items; people = s.people; units = s.units; load = s.load
+            items = s.items; people = s.people; units = s.units; load = s.load; washer = s.washer; dryer = s.dryer
         }
         loading = false
     }
 
     func save() {
         guard !loading else { return }
-        let snap = Snapshot(items: items, people: people, units: units, load: load)
+        let snap = Snapshot(items: items, people: people, units: units, load: load, washer: washer, dryer: dryer)
         if let data = try? JSONEncoder().encode(snap) { try? data.write(to: url, options: [.atomic, .completeFileProtection]) }
     }
 

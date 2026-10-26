@@ -15,10 +15,10 @@ ios/        SwiftUI app (iOS 17+), generated into an Xcode project with XcodeGen
   Washtag/Ads              consent, tracking prompt, App Open launch ad
   Washtag/Models           data types (match the backend JSON)
   Washtag/Services         API client, free product lookup (UPCitemdb + Open Facts), on-device
-                           barcode decoding, storage, load planner
+                           barcode decoding, storage, load planner, laundry sorter (loads + order)
   Washtag/Views            Scan, Index, This load, Household, care tag and symbols
 backend/    Cloudflare Worker: holds the Gemini API key (free tier)
-  src/index.ts             /v1/label, /v1/digits, /v1/enrich, /v1/suggest
+  src/index.ts             /v1/label, /v1/digits, /v1/enrich, /v1/suggest, /v1/appliance
   src/prompts.ts           prompts (Gemini, default model gemini-3.8-flash)
 ```
 
