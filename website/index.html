@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Washtag</title>
+<meta name="description" content="Washtag reads laundry care labels and product barcodes and turns them into clear wash, dry and do-not instructions.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one centred 1120px column of soft bubbles on white and ice blue, one black band for the download call. Single light look by design. */
+:root {
+  --blue: #1F5BE0;
+  --blue-deep: #0F3BA8;
+  --ice: #E4EEFF;
+  --ice-2: #F3F7FF;
+  --white: #FFFFFF;
+  --black: #0A0D14;
+  --ink: #0A0D14;
+  --ink-2: #4B5670;
+  --line: #D5E1F5;
+  --f-display: "Unbounded", "Figtree", system-ui, sans-serif;
+  --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* app palette, used only inside the phone screens */
+  --a-bg: #E6EDF1; --a-surface: #FFFFFF; --a-surface2: #F3F7F9; --a-ink: #16233F; --a-ink2: #4A5874; --a-line: #C9D5DD;
+  --a-tub: #2358C9; --a-tubsoft: #DCE6FA; --a-dry: #A8650F; --a-drysoft: #F8EBD6; --a-care: #2E7D6B; --a-caresoft: #DDF0EA;
+  --a-stop: #B8372A; --a-stopsoft: #F8E0DC; --a-good: #2E7D4F; --a-mid: #B7791F; --a-stitch: #8FA3B8;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { background: var(--white); color: var(--ink); font-family: var(--f-body); font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; border-radius: 8px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.mono { font-family: var(--f-mono); font-size: 12.5px; letter-spacing: .04em; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; letter-spacing: -.02em; text-wrap: balance; margin: 0; line-height: 1.08; }
+h1 { font-size: clamp(38px, 5.4vw, 64px); }
+h2 { font-size: clamp(28px, 3.8vw, 44px); }
+h3 { font-size: 19px; font-weight: 500; letter-spacing: -.01em; }
+p { margin: 0; }
+
+/* nav */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--white); }
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; padding-block: 14px; }
+.nav-in { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: rgba(255,255,255,.82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 999px; padding: 8px 8px 8px 18px; }
+.logo { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 600; font-size: 18px; text-decoration: none; }
+.logo-mark { width: 30px; height: 30px; border-radius: 50%; background: var(--blue); display: grid; place-items: center; color: var(--white); }
+.nav-links { display: flex; gap: 6px; align-items: center; }
+.nav-links a.l { text-decoration: none; font-weight: 500; font-size: 15px; padding: 8px 14px; border-radius: 999px; color: var(--ink-2); }
+.nav-links a.l:hover { background: var(--ice); color: var(--ink); }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 999px; padding: 12px 20px; border: 0; cursor: pointer; transition: transform .15s ease, background .15s ease; font-family: var(--f-body); }
+.btn:hover { transform: translateY(-1px); }
+.btn-black { background: var(--black); color: var(--white); }
+.btn-blue { background: var(--blue); color: var(--white); }
+.btn-blue:hover { background: var(--blue-deep); }
+.btn-ghost { background: var(--ice); color: var(--ink); }
+.btn-white { background: var(--white); color: var(--black); }
+.store { padding: 10px 22px 10px 16px; }
+.store svg { flex: none; }
+.store span { display: flex; flex-direction: column; line-height: 1.1; text-align: left; }
+.store small { font-size: 11px; font-weight: 500; opacity: .75; }
+.store b { font-size: 17px; }
+
+/* hero */
+.hero { position: relative; padding-block: 48px 72px; }
+.hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 8px; background: var(--ice); color: var(--blue-deep); border-radius: 999px; padding: 6px 14px 6px 8px; font-family: var(--f-mono); font-size: 12.5px; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); display: block; margin-left: 4px; box-shadow: 0 0 0 4px rgba(31,91,224,.18); }
+.hero h1 { margin-top: 22px; }
+.hero h1 em { font-style: normal; color: var(--blue); }
+.lede { margin-top: 22px; font-size: 19px; color: var(--ink-2); max-width: 34em; }
+.cta-row { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.cta-note { margin-top: 14px; color: var(--ink-2); }
+.hero-art { position: relative; display: grid; place-items: center; min-height: 560px; }
+.blob { position: absolute; border-radius: 50%; background: var(--ice); }
+.b1 { width: 440px; height: 440px; max-width: 100%; aspect-ratio: 1; }
+.b2 { width: 120px; height: 120px; right: 2%; top: 4%; background: var(--blue); opacity: .9; }
+.b3 { width: 56px; height: 56px; left: 6%; bottom: 10%; background: var(--black); }
+.float { position: absolute; z-index: 2; background: var(--white); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px 9px 10px; display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 14px; box-shadow: 0 10px 30px -12px rgba(15,59,168,.35); white-space: nowrap; }
+.float .ic { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--ice); color: var(--blue); }
+.float .ic svg { width: 18px; height: 18px; }
+.f1 { left: -2%; top: 18%; animation: bob 6s ease-in-out infinite; }
+.f2 { right: -4%; top: 48%; animation: bob 7s ease-in-out -2s infinite; }
+.f3 { left: 4%; bottom: 20%; animation: bob 6.5s ease-in-out -4s infinite; }
+.f2 .ic { background: #FDE7E4; color: #B8372A; }
+.conf { font-family: var(--f-mono); font-size: 12px; color: #2E7D4F; background: #E1F3E8; padding: 2px 8px; border-radius: 999px; }
+@keyframes bob { 50% { transform: translateY(-8px); } }
+
+/* phone */
+.phone { position: relative; z-index: 1; width: 272px; max-width: 100%; aspect-ratio: 9 / 19.2; background: var(--black); border-radius: 46px; padding: 10px; box-shadow: 0 40px 80px -30px rgba(10,13,20,.45), inset 0 0 0 2px #2A2F3A; flex: none; }
+.screen { position: relative; height: 100%; border-radius: 37px; overflow: hidden; background: var(--a-bg); color: var(--a-ink); font-family: -apple-system, "SF Pro Text", var(--f-body); font-size: 10.5px; line-height: 1.35; display: flex; flex-direction: column; }
+.island { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 76px; height: 22px; border-radius: 999px; background: var(--black); z-index: 3; }
+.sbar { display: flex; justify-content: space-between; padding: 12px 22px 0 26px; font-weight: 600; font-size: 11px; height: 34px; flex: none; }
+.sbar .r { display: flex; gap: 4px; align-items: center; }
+.sbar .r i { display: block; background: var(--a-ink); border-radius: 2px; }
+.scr-body { flex: 1; padding: 4px 12px 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; }
+.scr-title { font-size: 21px; font-weight: 700; letter-spacing: -.01em; padding: 2px 2px 2px; }
+.tabbar { flex: none; display: grid; grid-template-columns: repeat(4, 1fr); background: rgba(255,255,255,.92); border-top: 1px solid var(--a-line); padding: 6px 6px 16px; }
+.tab { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 8.5px; color: #8A96AC; }
+.tab svg { width: 17px; height: 17px; }
+.tab.on { color: var(--a-tub); }
+.card { background: var(--a-surface); border: 1.2px solid var(--a-line); border-radius: 11px; padding: 9px 10px; }
+.card h4 { margin: 0 0 6px; font-size: 11.5px; }
+.muted { color: var(--a-ink2); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1.6px solid var(--a-ink); border-radius: 11px; overflow: hidden; }
+.seg div { padding: 7px 4px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.seg div.on { background: var(--a-ink); color: var(--a-bg); }
+.seg b { font-size: 10.5px; }
+.seg small { font-size: 8.5px; opacity: .8; }
+.seg svg { width: 15px; height: 15px; }
+.dropbox { border: 1.6px dashed var(--a-stitch); background: var(--a-surface); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ios-btns { display: flex; gap: 6px; }
+.ios-btn { border-radius: 999px; padding: 5px 10px; font-weight: 600; font-size: 9.5px; background: var(--a-tubsoft); color: var(--a-tub); }
+.ios-btn.p { background: var(--a-tub); color: #fff; }
+.status { background: var(--a-surface2); border-radius: 9px; padding: 7px 9px 7px 12px; position: relative; overflow: hidden; }
+.status::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--a-tub); }
+
+/* fabric tag inside screen */
+.tag { width: 74%; background: #FBFCFD; border-radius: 6px; padding: 10px 10px 12px; position: relative; box-shadow: 0 1px 0 var(--a-line), 0 6px 14px -8px rgba(22,35,63,.4); transform: rotate(-2deg); }
+.tag::before { content: ""; position: absolute; inset: 4px; border: 1px dashed var(--a-stitch); border-radius: 4px; pointer-events: none; }
+.tag .t-top { text-align: center; font-weight: 700; font-size: 9px; letter-spacing: .06em; }
+.tag .t-sym { display: flex; justify-content: center; gap: 5px; margin: 7px 0; color: var(--a-ink); }
+.tag .t-sym svg { width: 20px; height: 20px; }
+.tag .t-txt { text-align: center; font-size: 7.5px; color: var(--a-ink2); letter-spacing: .03em; }
+.scanline { position: absolute; left: 6px; right: 6px; height: 2px; background: var(--a-tub); top: 40%; box-shadow: 0 0 10px 2px rgba(35,88,201,.5); animation: scan 3s ease-in-out infinite; border-radius: 2px; }
+@keyframes scan { 0%,100% { top: 18%; } 50% { top: 78%; } }
+
+/* result screen */
+.sec { border-radius: 9px; padding: 7px 9px; }
+.sec b { display: flex; align-items: center; gap: 5px; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+.sec ul { margin: 0; padding-left: 13px; }
+.s-wash { background: var(--a-tubsoft); } .s-wash b { color: var(--a-tub); }
+.s-dry { background: var(--a-drysoft); } .s-dry b { color: var(--a-dry); }
+.s-care { background: var(--a-caresoft); } .s-care b { color: var(--a-care); }
+.s-stop { background: var(--a-stopsoft); } .s-stop b { color: var(--a-stop); }
+.symrow { display: grid; grid-template-columns: 22px 1fr; gap: 3px 7px; align-items: center; }
+.symrow svg { width: 20px; height: 20px; }
+.symrow .c { font-size: 8.5px; }
+.bar { height: 4px; border-radius: 4px; background: var(--a-surface2); overflow: hidden; margin-top: 3px; }
+.bar i { display: block; height: 100%; border-radius: 4px; background: var(--a-good); }
+.who { display: flex; gap: 5px; flex-wrap: wrap; }
+.chip { border: 1.2px solid var(--a-line); border-radius: 999px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px; background: var(--a-surface); font-size: 9.5px; }
+.chip.on { background: var(--a-ink); color: var(--a-bg); border-color: var(--a-ink); }
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; }
+
+/* load + index */
+.item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--a-surface2); }
+.item:last-child { border-bottom: 0; }
+.item .nm { flex: 1; min-width: 0; }
+.item .nm b { display: block; font-size: 10.5px; }
+.item .mini { display: flex; gap: 2px; color: var(--a-ink2); }
+.item .mini svg { width: 13px; height: 13px; }
+.thumb { width: 26px; height: 26px; border-radius: 7px; flex: none; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 10px; }
+.dose { background: var(--a-ink); color: #fff; border-radius: 12px; padding: 10px 11px; display: flex; justify-content: space-between; align-items: flex-end; }
+.dose .big { font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1; }
+.dose small { opacity: .7; font-size: 8.5px; }
+.warn { background: var(--a-stopsoft); border-radius: 9px; padding: 7px 9px; color: #6B2017; }
+.search { background: #E0E6EB; border-radius: 9px; padding: 6px 9px; color: #8A96AC; display: flex; gap: 5px; align-items: center; }
+.search svg { width: 11px; height: 11px; }
+
+/* sections */
+section { padding-block: 72px; }
+.eyebrow { display: inline-block; color: var(--blue); margin-bottom: 14px; text-transform: uppercase; }
+.sec-head { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: end; margin-bottom: 40px; }
+.sec-head p { color: var(--ink-2); max-width: 32em; }
+
+/* modes */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.mode { border-radius: 36px; padding: 32px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.mode.m1 { background: var(--ice); }
+.mode.m2 { background: var(--black); color: var(--white); }
+.mode.m2 p { color: #B7C1D6; }
+.mode p { color: var(--ink-2); }
+.mode-ic { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--white); color: var(--blue); }
+.mode.m2 .mode-ic { background: var(--blue); color: var(--white); }
+.mode-ic svg { width: 28px; height: 28px; }
+.mode .eg { margin-top: auto; display: flex; flex-wrap: wrap; gap: 8px; padding-top: 10px; }
+.mode .eg span { border-radius: 999px; padding: 6px 12px; background: var(--white); color: var(--ink); }
+.mode.m2 .eg span { background: #1A2030; color: #DCE6FA; }
+
+/* features */
+.feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.feat { background: var(--ice-2); border: 1px solid var(--line); border-radius: 28px; padding: 26px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.feat .fi { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--blue); color: var(--white); }
+.feat .fi svg { width: 22px; height: 22px; }
+.feat p { color: var(--ink-2); font-size: 16px; }
+.conf-demo { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.conf-demo span { font-family: var(--f-mono); font-size: 12px; border-radius: 999px; padding: 3px 10px; }
+.cd-h { background: #E1F3E8; color: #1F6A3E; }
+.cd-m { background: #FBEFD9; color: #8A5A12; }
+.cd-l { background: #FBE3DF; color: #9C2C20; }
+
+/* screens */
+.screens-band { background: var(--ice); border-radius: 48px; padding-block: 64px; margin-inline: max(8px, env(safe-area-inset-left, 0px)); }
+.shots { display: flex; gap: 22px; overflow-x: auto; padding: 8px 4px 24px; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+.shots .phone { width: 246px; }
+.shot { scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; flex: none; }
+.shot figcaption { text-align: center; }
+.shot figcaption b { display: block; font-family: var(--f-display); font-weight: 500; font-size: 15px; }
+.shot figcaption span { color: var(--ink-2); font-size: 14px; }
+figure { margin: 0; }
+.mock-note { text-align: center; color: var(--ink-2); margin-top: 8px; }
+
+/* steps */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: s; }
+.step { border-radius: 28px; border: 1px solid var(--line); padding: 26px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.step .n { width: 40px; height: 40px; border-radius: 50%; background: var(--ice); color: var(--blue-deep); display: grid; place-items: center; font-family: var(--f-mono); font-weight: 500; }
+.step p { color: var(--ink-2); font-size: 16px; }
+
+/* download band */
+.dl { background: var(--black); color: var(--white); border-radius: 48px; padding-block: 72px; margin-inline: max(8px, env(safe-area-inset-left, 0px)); position: relative; overflow: hidden; }
+.dl .blob { background: var(--blue); }
+.dl .d1 { width: 360px; height: 360px; right: -120px; top: -140px; opacity: .9; }
+.dl .d2 { width: 160px; height: 160px; right: 140px; bottom: -90px; background: #2A3A66; }
+.dl-in { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 18px; align-items: flex-start; }
+.dl p { color: #B7C1D6; max-width: 34em; }
+.dl .err { display: none; align-items: center; gap: 10px; background: #2A1416; color: #FFB4A9; border: 1px solid #5A2228; border-radius: 999px; padding: 8px 16px 8px 10px; }
+.dl .err.show { display: inline-flex; }
+.err code { font-family: var(--f-mono); font-size: 12.5px; background: #3E1B1F; padding: 2px 8px; border-radius: 999px; }
+
+footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
+.foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: center; }
+.foot nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.foot a { text-decoration: none; }
+.foot a:hover { color: var(--blue); }
+
+@media (max-width: 900px) {
+  .hero-grid, .sec-head, .modes { grid-template-columns: 1fr; }
+  .feats, .steps { grid-template-columns: 1fr 1fr; }
+  .hero-art { min-height: 520px; }
+}
+@media (max-width: 620px) {
+  body { font-size: 16px; }
+  .nav-links a.l { display: none; }
+  .feats, .steps { grid-template-columns: 1fr; }
+  .hero { padding-block: 24px 40px; }
+  .hero-art { min-height: 0; padding-block: 24px; }
+  .f1 { left: 0; top: 10%; } .f2 { right: 0; } .f3 { left: 0; }
+  .b1 { width: 320px; height: 320px; }
+  .b2 { width: 72px; height: 72px; }
+  section { padding-block: 48px; }
+  .screens-band, .dl { border-radius: 32px; padding-block: 48px; }
+  .mode { padding: 24px; border-radius: 28px; }
+  .float { font-size: 12.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- Care symbol sprite (ISO 3758 style), reused in screens -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="s-wash30" viewBox="0 0 24 24"><path d="M2.5 7.5 4.6 19.5h14.8l2.1-12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M2.5 7.5c1.6-1.6 3.2-1.6 4.75 0s3.15 1.6 4.75 0 3.15-1.6 4.75 0 3.15 1.6 4.75 0" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="12" y="17" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor" font-family="system-ui, sans-serif">30</text></symbol>
+    <symbol id="s-nobleach" viewBox="0 0 24 24"><path d="M12 3.5 21.5 20h-19Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 21.5 19 6M19 21.5 5 6" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="s-tumblelow" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="6.2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></symbol>
+    <symbol id="s-notumble" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="6.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 2.5 21.5 21.5M21.5 2.5 2.5 21.5" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="s-ironlow" viewBox="0 0 24 24"><path d="M3 18h18l-1.6-7.5H9.2C6 10.5 4 13.6 3 18Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.5 10.5V7.5h7.5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="14.4" r="1.3" fill="currentColor"/></symbol>
+    <symbol id="s-dryclean" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor" font-family="system-ui, sans-serif">P</text></symbol>
+    <symbol id="s-flatdry" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 12h10" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/></symbol>
+    <symbol id="i-barcode" viewBox="0 0 24 24"><path d="M4 5v14M7 5v14M9.5 5v14M13 5v14M15 5v14M18 5v14M20 5v14" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="4" cy="6" r="1.3" fill="currentColor"/><circle cx="4" cy="12" r="1.3" fill="currentColor"/><circle cx="4" cy="18" r="1.3" fill="currentColor"/></symbol>
+    <symbol id="i-basket" viewBox="0 0 24 24"><path d="M4 9h16l-1.6 10.2a1 1 0 0 1-1 .8H6.6a1 1 0 0 1-1-.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9l3-5M16 9l-3-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.5 20c.6-3.8 3.2-6 6.5-6s5.9 2.2 6.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="17" cy="9" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M17.5 14.2c2.3.4 3.6 2.4 4 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M3.5 17a8.5 8.5 0 1 1 17 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 17l4.5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17" r="1.6" fill="currentColor"/></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3.5c3.6 4.3 6 7.6 6 10.6a6 6 0 0 1-12 0c0-3 2.4-6.3 6-10.6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2.5l2.2 11h10.6L20.5 7H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><circle cx="9" cy="19.5" r="1.5" fill="currentColor"/><circle cx="17" cy="19.5" r="1.5" fill="currentColor"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10.5 18.5h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-apple" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9s-2-.9-3.3-.9C6.1 7 4.5 8 3.7 9.6c-1.8 3.1-.5 7.7 1.3 10.2.8 1.2 1.8 2.6 3.1 2.5 1.3 0 1.7-.8 3.3-.8s2 .8 3.3.8c1.4 0 2.2-1.2 3-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.3ZM14 5.4c.7-.8 1.2-2 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4Z"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5v5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.5" r="1.2" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="wrap">
+    <div class="nav-in">
+      <a class="logo" href="#top" aria-label="Washtag home">
+        <span class="logo-mark"><svg width="16" height="16"><use href="#i-tag"/></svg></span>Washtag
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a class="l" href="#modes">How it reads</a>
+        <a class="l" href="#features">Features</a>
+        <a class="l" href="#screens">Screens</a>
+        <a class="btn btn-black js-store" href="https://apps.apple.com/app/washtag/id0000000000">Get the app</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <div class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="pill"><i></i>iPhone · care labels + UPC</span>
+        <h1>Read the tag.<br><em>Wash it right.</em></h1>
+        <p class="lede">Point your iPhone at a laundry care label or a product barcode. Washtag turns the symbols into plain Wash, Dry, Care and Do-not steps, saves them to your household index and tells you how much detergent the load needs.</p>
+        <div class="cta-row">
+          <a class="btn btn-black store js-store" href="https://apps.apple.com/app/washtag/id0000000000">
+            <svg width="22" height="22"><use href="#i-apple"/></svg>
+            <span><small>Download on the</small><b>App Store</b></span>
+          </a>
+          <a class="btn btn-ghost" href="#screens">See the screens</a>
+        </div>
+        <p class="cta-note mono">Free · iOS 17+ · Your index stays on your phone</p>
+      </div>
+
+      <div class="hero-art" aria-hidden="true">
+        <div class="blob b1"></div>
+        <div class="blob b2"></div>
+        <div class="blob b3"></div>
+        <div class="float f1"><span class="ic"><svg><use href="#s-wash30"/></svg></span>Machine wash 30°C</div>
+        <div class="float f2"><span class="ic"><svg><use href="#s-notumble"/></svg></span>Do not tumble dry</div>
+        <div class="float f3"><span class="ic"><svg><use href="#i-gauge"/></svg></span>Read 6 symbols <span class="conf">94%</span></div>
+
+        <!-- Hero phone: scan screen -->
+        <div class="phone">
+          <div class="screen">
+            <div class="island"></div>
+            <div class="sbar"><span>9:41</span><span class="r"><i style="width:3px;height:5px"></i><i style="width:3px;height:7px"></i><i style="width:3px;height:9px"></i><i style="width:16px;height:8px;border-radius:3px"></i></span></div>
+            <div class="scr-body">
+              <div class="scr-title">Washtag</div>
+              <div class="seg">
+                <div class="on"><svg><use href="#i-tag"/></svg><b>Care symbols</b><small>Photo of a wash label</small></div>
+                <div><svg><use href="#i-barcode"/></svg><b>UPC / barcode</b><small>Look up the product</small></div>
+              </div>
+              <div class="dropbox" style="position:relative">
+                <div class="tag">
+                  <div class="t-top">100% MERINO WOOL</div>
+                  <div class="t-sym">
+                    <svg><use href="#s-wash30"/></svg><svg><use href="#s-nobleach"/></svg><svg><use href="#s-notumble"/></svg><svg><use href="#s-ironlow"/></svg><svg><use href="#s-dryclean"/></svg>
+                  </div>
+                  <div class="t-txt">WASH INSIDE OUT · DRY FLAT<br>MADE IN PORTUGAL · RN 54023</div>
+                </div>
+                <div class="scanline"></div>
+                <div class="ios-btns"><span class="ios-btn p">Take photo</span><span class="ios-btn">Choose photo</span></div>
+              </div>
+              <div class="status">Read 6 symbols and the fibre content. Saved as “Grey merino sweater”.</div>
+              <div class="card">
+                <h4>Wash</h4>
+                <div class="muted">Machine wash cold, max 30°C, wool or gentle cycle. Turn inside out.</div>
+              </div>
+            </div>
+            <div class="tabbar">
+              <span class="tab on"><svg><use href="#i-tag"/></svg>Scan</span>
+              <span class="tab"><svg><use href="#i-list"/></svg>Index</span>
+              <span class="tab"><svg><use href="#i-basket"/></svg>This load</span>
+              <span class="tab"><svg><use href="#i-people"/></svg>Household</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section id="modes">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <span class="eyebrow mono">Two ways to scan</span>
+          <h2>Symbols on the label, or the code on the box.</h2>
+        </div>
+        <p>Clothes carry care symbols. Detergents, softeners and stain removers carry barcodes. Washtag reads both, and when a label has symbols and a barcode side by side it reads them together.</p>
+      </div>
+      <div class="modes">
+        <article class="mode m1">
+          <span class="mode-ic"><svg><use href="#i-tag"/></svg></span>
+          <h3>Care symbols</h3>
+          <p>Photograph a wash label flat and in focus. Each symbol is decoded into a temperature, a cycle and a list of things to avoid, with a confidence score next to every one. Text in other languages is translated.</p>
+          <div class="eg mono"><span>wash ≤30°C</span><span>no bleach</span><span>no tumble</span><span>iron ·</span><span>dry clean P</span></div>
+        </article>
+        <article class="mode m2">
+          <span class="mode-ic"><svg><use href="#i-barcode"/></svg></span>
+          <h3>UPC / barcode</h3>
+          <p>Scan live with the camera, take a photo, or type the digits. Washtag checks the check digit on the phone, looks the product up, and shows how to use it with dosing notes and where to buy.</p>
+          <div class="eg mono"><span>UPC-A</span><span>EAN-13</span><span>EAN-8</span><span>check digit ✓</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" style="padding-top:24px">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <span class="eyebrow mono">What you get</span>
+          <h2>Everything the label means, in one place.</h2>
+        </div>
+        <p>No more guessing what a square with a circle and two dots wants from you.</p>
+      </div>
+      <div class="feats">
+        <div class="feat">
+          <span class="fi"><svg><use href="#i-list"/></svg></span>
+          <h3>Wash, Dry, Care, Do not</h3>
+          <p>Every scan becomes four short lists. The strictest rule is always on top.</p>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg><use href="#i-gauge"/></svg></span>
+          <h3>Confidence on every read</h3>
+          <p>See how sure Washtag is about each symbol, and what to double-check on the tag.</p>
+          <div class="conf-demo"><span class="cd-h">High · 94%</span><span class="cd-m">Medium · 68%</span><span class="cd-l">Low · 41%</span></div>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg><use href="#i-people"/></svg></span>
+          <h3>Household labels</h3>
+          <p>Tag each item with who it belongs to, then filter the index by person.</p>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg><use href="#i-basket"/></svg></span>
+          <h3>Plan this load</h3>
+          <p>Pick the items going in the machine. Washtag uses the strictest label in the pile and flags anything to pull out.</p>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg><use href="#i-drop"/></svg></span>
+          <h3>Per-load amounts</h3>
+          <p>A detergent amount in ml or fl oz for the load size and soil level, as a starting point next to your cap markings.</p>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg><use href="#i-cart"/></svg></span>
+          <h3>Product suggestions</h3>
+          <p>Suggestions for the fabrics in the load, like a wool wash or a mesh bag, with the reason for each.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="screens" class="screens-band">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <span class="eyebrow mono">Inside the app</span>
+          <h2>Four tabs. No clutter.</h2>
+        </div>
+        <p>Scan, Index, This load and Household. Swipe through the screens below.</p>
+      </div>
+
+      <div class="shots" tabindex="0" aria-label="App screens">
+        <!-- 1. Result -->
+        <figure class="shot">
+          <div class="phone">
+            <div class="screen">
+              <div class="island"></div>
+              <div class="sbar"><span>9:41</span><span class="r"><i style="width:3px;height:5px"></i><i style="width:3px;height:7px"></i><i style="width:3px;height:9px"></i><i style="width:16px;height:8px;border-radius:3px"></i></span></div>
+              <div class="scr-body">
+                <div class="scr-title" style="font-size:16px">Grey merino sweater</div>
+                <div class="card">
+                  <h4>Symbols read</h4>
+                  <div class="symrow">
+                    <svg><use href="#s-wash30"/></svg><div>Machine wash, max 30°C<div class="bar"><i style="width:96%"></i></div><span class="c" style="color:var(--a-good)">High confidence · 96%</span></div>
+                    <svg><use href="#s-notumble"/></svg><div>Do not tumble dry<div class="bar"><i style="width:93%"></i></div><span class="c" style="color:var(--a-good)">High confidence · 93%</span></div>
+                    <svg><use href="#s-ironlow"/></svg><div>Iron on low, 110°C<div class="bar"><i style="width:71%;background:var(--a-mid)"></i></div><span class="c" style="color:var(--a-mid)">Medium confidence · 71%</span></div>
+                  </div>
+                </div>
+                <div class="sec s-wash"><b><svg width="12" height="12"><use href="#i-drop"/></svg>Wash</b><ul><li>Cold, 30°C max, wool cycle</li><li>Turn inside out</li></ul></div>
+                <div class="sec s-dry"><b>Dry</b><ul><li>Dry flat, away from heat</li></ul></div>
+                <div class="sec s-stop"><b>Do not</b><ul><li>Bleach · Tumble dry · Wring</li></ul></div>
+                <div class="card" style="padding:7px 9px">
+                  <div style="font-weight:600;margin-bottom:4px">Belongs to</div>
+                  <div class="who"><span class="chip on"><span class="dot" style="background:#2358C9"></span>Dhru</span><span class="chip"><span class="dot" style="background:#C4572F"></span>Maya</span><span class="chip"><span class="dot" style="background:#2E7D6B"></span>Kids</span></div>
+                </div>
+              </div>
+              <div class="tabbar">
+                <span class="tab on"><svg><use href="#i-tag"/></svg>Scan</span>
+                <span class="tab"><svg><use href="#i-list"/></svg>Index</span>
+                <span class="tab"><svg><use href="#i-basket"/></svg>This load</span>
+                <span class="tab"><svg><use href="#i-people"/></svg>Household</span>
+              </div>
+            </div>
+          </div>
+          <figcaption><b>The result</b><span>Symbols, confidence and four plain lists</span></figcaption>
+        </figure>
+
+        <!-- 2. Barcode -->
+        <figure class="shot">
+          <div class="phone">
+            <div class="screen">
+              <div class="island"></div>
+              <div class="sbar"><span>9:41</span><span class="r"><i style="width:3px;height:5px"></i><i style="width:3px;height:7px"></i><i style="width:3px;height:9px"></i><i style="width:16px;height:8px;border-radius:3px"></i></span></div>
+              <div class="scr-body">
+                <div class="scr-title">Washtag</div>
+                <div class="seg">
+                  <div><svg><use href="#i-tag"/></svg><b>Care symbols</b><small>Photo of a wash label</small></div>
+                  <div class="on"><svg><use href="#i-barcode"/></svg><b>UPC / barcode</b><small>Look up the product</small></div>
+                </div>
+                <div class="card">
+                  <h4>Or type the number under the barcode</h4>
+                  <div style="display:flex;gap:6px;align-items:center"><span style="flex:1;border:1px solid var(--a-line);border-radius:6px;padding:4px 6px;font-family:var(--f-mono);font-size:9.5px">037000127864</span><span class="ios-btn">Look up</span></div>
+                  <div class="muted" style="margin-top:4px;font-size:9px">✓ Valid UPC-A check digit</div>
+                </div>
+                <div class="card">
+                  <div style="font-family:var(--f-mono);font-size:8.5px" class="muted">Barcode 037000127864 · UPC-A</div>
+                  <h4 style="margin-top:4px;font-size:13px">Free &amp; Clear Liquid Detergent</h4>
+                  <div class="muted">Laundry detergent · 2.21 L · 48 loads</div>
+                  <div style="margin-top:6px">• Safe for HE and standard machines<br>• Fragrance and dye free</div>
+                  <div style="margin-top:6px;background:var(--a-drysoft);border-radius:8px;padding:6px 8px"><b>Dosing:</b> line 1 on the cap for a medium load, line 3 for large or heavily soiled.</div>
+                  <div style="margin-top:6px;font-weight:600">Where to buy</div>
+                  <div class="who" style="margin-top:4px"><span class="chip">Search online</span><span class="chip">Compare prices</span></div>
+                </div>
+              </div>
+              <div class="tabbar">
+                <span class="tab on"><svg><use href="#i-tag"/></svg>Scan</span>
+                <span class="tab"><svg><use href="#i-list"/></svg>Index</span>
+                <span class="tab"><svg><use href="#i-basket"/></svg>This load</span>
+                <span class="tab"><svg><use href="#i-people"/></svg>Household</span>
+              </div>
+            </div>
+          </div>
+          <figcaption><b>Barcode lookup</b><span>Product, usage notes and dosing</span></figcaption>
+        </figure>
+
+        <!-- 3. This load -->
+        <figure class="shot">
+          <div class="phone">
+            <div class="screen">
+              <div class="island"></div>
+              <div class="sbar"><span>9:41</span><span class="r"><i style="width:3px;height:5px"></i><i style="width:3px;height:7px"></i><i style="width:3px;height:9px"></i><i style="width:16px;height:8px;border-radius:3px"></i></span></div>
+              <div class="scr-body">
+                <div class="scr-title">This load</div>
+                <div class="card" style="padding:4px 10px">
+                  <div style="display:flex;justify-content:space-between;padding-top:4px"><b>Items in this load</b><span style="color:var(--a-tub)">Clear</span></div>
+                  <div class="item"><span class="thumb" style="background:#2358C9">G</span><span class="nm"><b>Grey merino sweater</b><span class="muted">Dhru</span></span><span class="mini"><svg><use href="#s-wash30"/></svg><svg><use href="#s-notumble"/></svg></span></div>
+                  <div class="item"><span class="thumb" style="background:#C4572F">L</span><span class="nm"><b>Linen shirt</b><span class="muted">Maya</span></span><span class="mini"><svg><use href="#s-wash30"/></svg><svg><use href="#s-tumblelow"/></svg></span></div>
+                  <div class="item"><span class="thumb" style="background:#2E7D6B">S</span><span class="nm"><b>School polo ×3</b><span class="muted">Kids</span></span><span class="mini"><svg><use href="#s-wash30"/></svg><svg><use href="#s-tumblelow"/></svg></span></div>
+                </div>
+                <div class="card">
+                  <h4>Wash the pile at</h4>
+                  <div style="font-size:15px;font-weight:700">30°C · Gentle / wool</div>
+                  <div class="muted">Set by the merino sweater, the strictest label here.</div>
+                </div>
+                <div class="dose"><div><small>Detergent for a medium load</small><div class="big">45 ml</div></div><small style="text-align:right">Light soil<br>Standard detergent</small></div>
+                <div class="warn"><b>Line dry:</b> take the merino sweater out before the dryer. It must dry flat.</div>
+              </div>
+              <div class="tabbar">
+                <span class="tab"><svg><use href="#i-tag"/></svg>Scan</span>
+                <span class="tab"><svg><use href="#i-list"/></svg>Index</span>
+                <span class="tab on"><svg><use href="#i-basket"/></svg>This load</span>
+                <span class="tab"><svg><use href="#i-people"/></svg>Household</span>
+              </div>
+            </div>
+          </div>
+          <figcaption><b>This load</b><span>Strictest rule wins, amount worked out</span></figcaption>
+        </figure>
+
+        <!-- 4. Index -->
+        <figure class="shot">
+          <div class="phone">
+            <div class="screen">
+              <div class="island"></div>
+              <div class="sbar"><span>9:41</span><span class="r"><i style="width:3px;height:5px"></i><i style="width:3px;height:7px"></i><i style="width:3px;height:9px"></i><i style="width:16px;height:8px;border-radius:3px"></i></span></div>
+              <div class="scr-body">
+                <div class="scr-title">Index</div>
+                <div class="search"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m15 15 5.5 5.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Search 24 items</div>
+                <div class="who"><span class="chip on">Everyone</span><span class="chip"><span class="dot" style="background:#2358C9"></span>Dhru</span><span class="chip"><span class="dot" style="background:#C4572F"></span>Maya</span><span class="chip"><span class="dot" style="background:#2E7D6B"></span>Kids</span></div>
+                <div class="card" style="padding:2px 10px">
+                  <div class="item"><span class="thumb" style="background:#2358C9">G</span><span class="nm"><b>Grey merino sweater</b><span class="muted">Wool · 30°C · dry flat</span></span><span class="mini"><svg><use href="#s-wash30"/></svg><svg><use href="#s-notumble"/></svg></span></div>
+                  <div class="item"><span class="thumb" style="background:#C4572F">L</span><span class="nm"><b>Linen shirt</b><span class="muted">Linen · 40°C · low tumble</span></span><span class="mini"><svg><use href="#s-tumblelow"/></svg><svg><use href="#s-ironlow"/></svg></span></div>
+                  <div class="item"><span class="thumb" style="background:#8A4FBF">S</span><span class="nm"><b>Silk blouse</b><span class="muted">Silk · dry clean only</span></span><span class="mini"><svg><use href="#s-dryclean"/></svg><svg><use href="#s-nobleach"/></svg></span></div>
+                  <div class="item"><span class="thumb" style="background:#2E7D6B">S</span><span class="nm"><b>School polo</b><span class="muted">Cotton blend · 40°C</span></span><span class="mini"><svg><use href="#s-tumblelow"/></svg></span></div>
+                  <div class="item"><span class="thumb" style="background:#16233F">F</span><span class="nm"><b>Free &amp; Clear detergent</b><span class="muted">Product · UPC-A</span></span><span class="mini"><svg><use href="#i-barcode"/></svg></span></div>
+                  <div class="item"><span class="thumb" style="background:#2358C9">J</span><span class="nm"><b>Raw denim jeans</b><span class="muted">Cotton · 30°C · inside out</span></span><span class="mini"><svg><use href="#s-wash30"/></svg><svg><use href="#s-flatdry"/></svg></span></div>
+                </div>
+              </div>
+              <div class="tabbar">
+                <span class="tab"><svg><use href="#i-tag"/></svg>Scan</span>
+                <span class="tab on"><svg><use href="#i-list"/></svg>Index</span>
+                <span class="tab"><svg><use href="#i-basket"/></svg>This load</span>
+                <span class="tab"><svg><use href="#i-people"/></svg>Household</span>
+              </div>
+            </div>
+          </div>
+          <figcaption><b>Your index</b><span>Every scan, filtered by person</span></figcaption>
+        </figure>
+      </div>
+      <p class="mock-note mono">Screens are drawn from the app’s layout with example items.</p>
+    </div>
+  </div>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <span class="eyebrow mono">How it works</span>
+          <h2>From tag to machine in three taps.</h2>
+        </div>
+      </div>
+      <ol class="steps" style="list-style:none;margin:0;padding:0">
+        <li class="step"><span class="n">1</span><h3>Scan</h3><p>Photograph the care label, or scan the barcode on the bottle.</p></li>
+        <li class="step"><span class="n">2</span><h3>Save</h3><p>Name the item, tag who it belongs to, and it lands in your index.</p></li>
+        <li class="step"><span class="n">3</span><h3>Wash</h3><p>Add items to this load to get one setting and one detergent amount.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <div id="download" class="dl">
+    <div class="blob d1"></div>
+    <div class="blob d2"></div>
+    <div class="wrap dl-in">
+      <span class="pill" style="background:#1A2030;color:#DCE6FA"><i></i>iPhone · iOS 17 or later</span>
+      <h2>Stop shrinking sweaters.</h2>
+      <p>Washtag is free to download. Scan your first label in under ten seconds.</p>
+      <div class="cta-row" style="margin-top:6px">
+        <a class="btn btn-white store js-store" href="https://apps.apple.com/app/washtag/id0000000000">
+          <svg width="22" height="22"><use href="#i-apple"/></svg>
+          <span><small>Download on the</small><b>App Store</b></span>
+        </a>
+      </div>
+      <div class="err mono" id="store-err" role="status" aria-live="polite">
+        <svg width="18" height="18"><use href="#i-alert"/></svg>
+        <span>App Store listing not found <code>404 · id0000000000</code></span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <a class="logo" href="#top"><span class="logo-mark"><svg width="16" height="16"><use href="#i-tag"/></svg></span>Washtag</a>
+    <nav aria-label="Footer">
+      <a href="#modes">How it reads</a>
+      <a href="#features">Features</a>
+      <a href="#screens">Screens</a>
+      <a class="js-store" href="https://apps.apple.com/app/washtag/id0000000000">App Store</a>
+    </nav>
+    <span class="mono">© 2026 Washtag</span>
+  </div>
+</footer>
+
+<script>
+// The app isn't listed yet, so every App Store link points at a placeholder id.
+// Replace STORE_URL with the real listing once it's live and delete the error pill.
+const STORE_URL = "https://apps.apple.com/app/washtag/id0000000000";
+document.querySelectorAll(".js-store").forEach(a => {
+  a.href = STORE_URL;
+  a.addEventListener("click", e => {
+    e.preventDefault();
+    const err = document.getElementById("store-err");
+    err.classList.add("show");
+    document.getElementById("download").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+});
+</script>
+</body>
+</html>
