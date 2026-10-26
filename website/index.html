@@ -315,6 +315,8 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
     <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.5 20c.6-3.8 3.2-6 6.5-6s5.9 2.2 6.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="17" cy="9" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M17.5 14.2c2.3.4 3.6 2.4 4 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
     <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M3.5 17a8.5 8.5 0 1 1 17 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 17l4.5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17" r="1.6" fill="currentColor"/></symbol>
     <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3.5c3.6 4.3 6 7.6 6 10.6a6 6 0 0 1-12 0c0-3 2.4-6.3 6-10.6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-washer" viewBox="0 0 24 24"><rect x="4" y="2.5" width="16" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 7h16" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="14" r="4.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="7" cy="4.8" r=".9" fill="currentColor"/></symbol>
+    <symbol id="i-order" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><text x="4.5" y="8" text-anchor="middle" font-size="6.5" font-weight="700" fill="currentColor" font-family="system-ui, sans-serif">1</text><text x="4.5" y="14" text-anchor="middle" font-size="6.5" font-weight="700" fill="currentColor" font-family="system-ui, sans-serif">2</text><text x="4.5" y="20" text-anchor="middle" font-size="6.5" font-weight="700" fill="currentColor" font-family="system-ui, sans-serif">3</text></symbol>
     <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2.5l2.2 11h10.6L20.5 7H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><circle cx="9" cy="19.5" r="1.5" fill="currentColor"/><circle cx="17" cy="19.5" r="1.5" fill="currentColor"/></symbol>
     <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10.5 18.5h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
     <symbol id="i-apple" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9s-2-.9-3.3-.9C6.1 7 4.5 8 3.7 9.6c-1.8 3.1-.5 7.7 1.3 10.2.8 1.2 1.8 2.6 3.1 2.5 1.3 0 1.7-.8 3.3-.8s2 .8 3.3.8c1.4 0 2.2-1.2 3-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.3ZM14 5.4c.7-.8 1.2-2 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4Z"/></symbol>
@@ -346,9 +348,9 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
   <div class="hero">
     <div class="wrap hero-grid">
       <div>
-        <span class="pill"><i></i>iPhone · care labels + UPC</span>
+        <span class="pill"><i></i>iPhone · care labels, UPC + your machines</span>
         <h1>Read the tag.<br><em>Wash it right.</em></h1>
-        <p class="lede">Point your iPhone at a laundry care label or a product barcode. Washtag turns the symbols into plain Wash, Dry, Care and Do-not steps, saves them to your household index and tells you how much detergent the load needs.</p>
+        <p class="lede">Point your iPhone at a laundry care label or a product barcode. Washtag turns the symbols into plain Wash, Dry, Care and Do-not steps, saves them to your household index, and Washtag recommends how to sort the basket into loads for your own washer and dryer.</p>
         <div class="cta-row">
           <a class="btn btn-black store js-store" href="https://apps.apple.com/app/washtag/id0000000000">
             <svg width="22" height="22"><use href="#i-apple"/></svg>
@@ -461,13 +463,28 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
         </div>
         <div class="feat">
           <span class="fi"><svg><use href="#i-basket"/></svg></span>
-          <h3>Plan this load</h3>
-          <p>Pick the items going in the machine. Washtag uses the strictest label in the pile and flags anything to pull out.</p>
+          <h3>Sort my laundry</h3>
+          <p>Pick everything in the basket. Washtag recommends how to group it into loads by care, colour and towels, sized to fit your drum, and flags anything to keep out of the machine.</p>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg><use href="#i-washer"/></svg></span>
+          <h3>Your washer &amp; dryer</h3>
+          <p>Add your models to get the maker’s specs: drum size, HE detergent, spin speed and the cycle names on your own control panel. No model number? Pick the machine type and Washtag uses typical specs.</p>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg><use href="#i-order"/></svg></span>
+          <h3>The order to run them</h3>
+          <p>Washtag recommends which load goes first so the dryer is busy while the next one washes, and tells you roughly how long the whole basket takes.</p>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg><use href="#s-tumblelow"/></svg></span>
+          <h3>Dryer settings</h3>
+          <p>Washtag recommends the heat level and cycle for your dryer, and which items to pull out to air dry first.</p>
         </div>
         <div class="feat">
           <span class="fi"><svg><use href="#i-drop"/></svg></span>
           <h3>Per-load amounts</h3>
-          <p>A detergent amount in ml or fl oz for the load size and soil level, as a starting point next to your cap markings.</p>
+          <p>A detergent amount in ml or fl oz for each load, HE or standard to match your washer, as a starting point next to your cap markings.</p>
         </div>
         <div class="feat">
           <span class="fi"><svg><use href="#i-cart"/></svg></span>
@@ -570,19 +587,24 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
               <div class="sbar"><span>9:41</span><span class="r"><i style="width:3px;height:5px"></i><i style="width:3px;height:7px"></i><i style="width:3px;height:9px"></i><i style="width:16px;height:8px;border-radius:3px"></i></span></div>
               <div class="scr-body">
                 <div class="scr-title">This load</div>
-                <div class="card" style="padding:4px 10px">
-                  <div style="display:flex;justify-content:space-between;padding-top:4px"><b>Items in this load</b><span style="color:var(--a-tub)">Clear</span></div>
-                  <div class="item"><span class="thumb" style="background:#2358C9">G</span><span class="nm"><b>Grey merino sweater</b><span class="muted">Dhru</span></span><span class="mini"><svg><use href="#s-wash30"/></svg><svg><use href="#s-notumble"/></svg></span></div>
-                  <div class="item"><span class="thumb" style="background:#C4572F">L</span><span class="nm"><b>Linen shirt</b><span class="muted">Emma</span></span><span class="mini"><svg><use href="#s-wash30"/></svg><svg><use href="#s-tumblelow"/></svg></span></div>
-                  <div class="item"><span class="thumb" style="background:#2E7D6B">S</span><span class="nm"><b>School polo ×3</b><span class="muted">Kids</span></span><span class="mini"><svg><use href="#s-wash30"/></svg><svg><use href="#s-tumblelow"/></svg></span></div>
-                </div>
+                <div class="card" style="padding:6px 10px;display:flex;align-items:center;gap:8px"><svg style="width:18px;height:18px;color:var(--a-tub)"><use href="#i-washer"/></svg><span><b>Your washer &amp; dryer</b><br><span class="muted">LG front loader · Electric dryer</span></span></div>
+                <div class="who"><span class="chip on">Sort my laundry</span><span class="chip">One load</span></div>
                 <div class="card">
-                  <h4>Wash the pile at</h4>
-                  <div style="font-size:15px;font-weight:700">30°C · Gentle / wool</div>
-                  <div class="muted">Set by the merino sweater, the strictest label here.</div>
+                  <h4>Washtag recommends 3 loads</h4>
+                  <div class="muted">About 3 h 40 min from first wash to last dry.</div>
                 </div>
-                <div class="dose"><div><small>Detergent for a medium load</small><div class="big">45 ml</div></div><small style="text-align:right">Light soil<br>Standard detergent</small></div>
-                <div class="warn"><b>Line dry:</b> take the merino sweater out before the dryer. It must dry flat.</div>
+                <div class="card" style="padding:8px 10px">
+                  <div style="font-weight:700">1 · Towels &amp; bedding</div>
+                  <div class="muted">Bulky / Bedding · 60°C · high spin · tumble high</div>
+                </div>
+                <div class="card" style="padding:8px 10px">
+                  <div style="font-weight:700">2 · Darks</div>
+                  <div class="muted">Normal · 30°C · 35 ml HE · tumble medium</div>
+                </div>
+                <div class="card" style="padding:8px 10px">
+                  <div style="font-weight:700">3 · Wool &amp; silk</div>
+                  <div class="muted">Hand Wash / Wool · low spin · dry flat</div>
+                </div>
               </div>
               <div class="tabbar">
                 <span class="tab"><svg><use href="#i-tag"/></svg>Scan</span>
@@ -592,7 +614,7 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
               </div>
             </div>
           </div>
-          <figcaption><b>This load</b><span>Strictest rule wins, amount worked out</span></figcaption>
+          <figcaption><b>Sort my laundry</b><span>Loads, order and cycles for your machines</span></figcaption>
         </figure>
 
         <!-- 4. Index -->
@@ -640,7 +662,7 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
       <ol class="steps" style="list-style:none;margin:0;padding:0">
         <li class="step"><span class="n">1</span><h3>Scan</h3><p>Photograph the care label, or scan the barcode on the bottle.</p></li>
         <li class="step"><span class="n">2</span><h3>Save</h3><p>Name the item, tag who it belongs to, and it lands in your index.</p></li>
-        <li class="step"><span class="n">3</span><h3>Wash</h3><p>Add items to this load to get one setting and one detergent amount.</p></li>
+        <li class="step"><span class="n">3</span><h3>Wash</h3><p>Pick the basket and Washtag recommends the loads, the order, and the cycle on your machine.</p></li>
       </ol>
     </div>
   </section>
