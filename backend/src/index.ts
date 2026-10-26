@@ -3,7 +3,7 @@
 // The Gemini API key lives here as a Worker secret and never ships inside the app.
 // Product (barcode) lookup happens in the app itself against free databases.
 
-import { DIGITS_PROMPT, LABEL_PROMPT, enrichPrompt, suggestPrompt } from "./prompts";
+import { DIGITS_PROMPT, LABEL_PROMPT, appliancePrompt, enrichPrompt, suggestPrompt } from "./prompts";
 
 export interface Env {
   GEMINI_API_KEY: string;
@@ -55,6 +55,14 @@ export default {
         const b = await body<{ structured?: unknown; needs?: string[]; fibres?: string | null; type?: string | null }>(req);
         const prompt = suggestPrompt(b.structured, (b.needs || []).slice(0, 12), b.fibres ?? null, b.type ?? null);
         return json(await gemini(env, prompt, null, 3000));
+      }
+      if (req.method === "POST" && url.pathname === "/v1/appliance") {
+        const b = await body<{ kind?: string; brand?: string; model?: string }>(req);
+        if (b.kind !== "washer" && b.kind !== "dryer") throw new HttpError(400, "bad_request", "\"kind\" must be washer or dryer.");
+        const brand = String(b.brand ?? "").trim().slice(0, 60);
+        const model = String(b.model ?? "").trim().slice(0, 60);
+        if (!brand && !model) throw new HttpError(400, "bad_request", "Send a brand or model number.");
+        return json(await gemini(env, appliancePrompt(b.kind, brand, model), null, 2000));
       }
       throw new HttpError(404, "not_found", "No such endpoint.");
     } catch (e) {

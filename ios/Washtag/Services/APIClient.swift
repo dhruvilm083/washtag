@@ -46,6 +46,13 @@ struct APIClient {
                               body: try JSONEncoder().encode(Body(structured: structured, needs: needs, fibres: fibres, type: type)))
     }
 
+    /// Looks up the maker's specs for a washer or dryer model. Gemini answers from what it knows, with a confidence.
+    func lookupAppliance(kind: ApplianceKind, brand: String, model: String) async throws -> ApplianceLookup {
+        struct Body: Encodable { var kind: ApplianceKind; var brand: String; var model: String }
+        return try await send(path: "v1/appliance", method: "POST", query: [],
+                              body: try JSONEncoder().encode(Body(kind: kind, brand: String(brand.prefix(60)), model: String(model.prefix(60)))))
+    }
+
     // MARK: plumbing
 
     private func post<T: Decodable>(_ path: String, body: [String: String]) async throws -> T {

@@ -66,3 +66,30 @@ Reply with ONLY a JSON object:
   "avoid": [ { "what": "product or practice", "why": "one sentence" } ] }
 Up to 4 suggestions and up to 3 avoid entries.`;
 }
+
+export function appliancePrompt(kind: "washer" | "dryer", brand: string, model: string): string {
+  const types = kind === "washer" ? `"front"|"top_he"|"top_agitator"` : `"electric"|"gas"|"heat_pump"|"condenser"`;
+  return `You look up the manufacturer's published specifications for a home laundry ${kind}.
+Brand: ${JSON.stringify(brand)}
+Model number: ${JSON.stringify(model)}
+Only report what you actually know for this exact model or its model series. Use null for anything you are not sure of; never guess a number.
+If you do not recognise the model, set found to false and give only what the brand's machines of this kind usually have, with a low confidence.
+"cycles" are the cycle names as printed on this machine's control panel. "tips" are the manufacturer's own loading, detergent and care recommendations for it.
+
+Reply with ONLY one JSON object:
+{
+ "found": true|false,
+ "confidence": 0-100,
+ "name": "marketing name or null",
+ "type": ${types}|null,
+ "capacityCuFt": number|null,
+ "capacityKg": number|null,
+ ${kind === "washer" ? `"detergent": "he"|"standard"|null,
+ "maxSpinRpm": number|null,
+ "hasHeater": true|false|null,` : `"sensorDry": true|false|null,`}
+ "steam": true|false|null,
+ "cycles": ["cycle names, at most 20"],
+ "tips": ["manufacturer recommendations, at most 6, one sentence each"],
+ "basis": "one short sentence on where this comes from and how sure you are"
+}`;
+}
