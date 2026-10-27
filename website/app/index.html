@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Washtag</title>
+<meta name="description" content="Read laundry care labels and product barcodes, save them for your household, and plan loads for your washer and dryer.">
+<meta name="theme-color" content="#E6EDF1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1524" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Washtag">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="/app/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="/app/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/app/icons/icon-180.png">
+<link rel="stylesheet" href="/app/app.css">
+<script type="module" src="/app/js/app.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <button class="back" id="back" type="button" hidden>‹ Back</button>
+    <h1 id="title">Washtag</h1>
+  </div>
+</header>
+
+<main id="view" tabindex="-1">
+  <noscript><div class="panel">Washtag needs JavaScript turned on.</div></noscript>
+</main>
+
+<nav class="tabs" aria-label="Sections">
+  <div class="tabs-in">
+    <a href="#scan" data-tab="scan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><rect x="8" y="8" width="8" height="8" rx="1.5"/></svg>
+      Scan</a>
+    <a href="#index" data-tab="index">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg>
+      Index</a>
+    <a href="#load" data-tab="load">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2.5"/><circle cx="12" cy="13" r="4.5"/><path d="M7 6.5h2" stroke-linecap="round"/></svg>
+      This load</a>
+    <a href="#household" data-tab="household">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9.5" r="2.5"/><path d="M15.8 14.2c2.4-.4 4.3 1.2 4.7 4.3"/></svg>
+      Household</a>
+  </div>
+</nav>
+
+<input type="file" id="cam" accept="image/*" capture="environment" class="sr" tabindex="-1" aria-hidden="true">
+<input type="file" id="pick" accept="image/*" class="sr" tabindex="-1" aria-hidden="true">
+<input type="file" id="restore" accept="application/json,.json" class="sr" tabindex="-1" aria-hidden="true">
+
+<div class="live" id="live" hidden role="dialog" aria-modal="true" aria-label="Scan a barcode with the camera">
+  <video id="live-video" playsinline muted></video>
+  <div class="guide"></div>
+  <div class="bar2">
+    <span>Line the barcode up inside the box.</span>
+    <button class="btn" type="button" id="live-close">Cancel</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

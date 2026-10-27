@@ -15,3 +15,12 @@ The app isn't on the App Store yet, so every App Store button points at a placeh
 1. Sign in at vercel.com with GitHub and choose **Add New → Project**.
 2. Import `dhruvilm083/washtag` and keep the defaults (Framework Preset: Other). Deploy.
 3. The site goes live at `https://<project-name>.vercel.app`, and every push to `main` redeploys it.
+
+## Web app (`app/`)
+
+`/app/` is Washtag as an installable web app (PWA), so people can use it on any phone without the App Store. It has the same Scan, Index, This load and Household screens as the iPhone app, saves everything in the browser, and works offline apart from scanning. In Safari: Share → Add to Home Screen.
+
+- The AI calls go to `/api/washtag` (`api/washtag.ts` at the repo root, a Vercel Edge Function that reuses the Worker's routes in `backend/src/api.ts`). Set **`GEMINI_API_KEY`** in Vercel → Project → Settings → Environment Variables (optional: `GEMINI_MODEL`), then redeploy.
+- Barcodes are decoded on the device (BarcodeDetector, or the bundled ZXing in `app/vendor/`, Apache-2.0). Product lookup uses UPCitemdb and Open Facts straight from the browser, relayed through `/api/washtag` if the browser blocks it.
+- Ads: fill in `ADSENSE` in `app/js/config.js` once AdSense approves the site.
+- After changing app files, bump `VERSION` in `app/sw.js`.
