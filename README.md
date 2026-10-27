@@ -17,7 +17,10 @@ ios/        SwiftUI app (iOS 17+), generated into an Xcode project with XcodeGen
   Washtag/Services         API client, free product lookup (UPCitemdb + Open Facts), on-device
                            barcode decoding, storage, load planner, laundry sorter (loads + order)
   Washtag/Views            Scan, Index, This load, Household, care tag and symbols
+website/    showcase site + website/app/ (the web app / PWA, served at /app/ on Vercel)
+api/        Vercel function for the web app: Gemini via the same routes as the Worker
 backend/    Cloudflare Worker: holds the Gemini API key (free tier)
+  src/api.ts               routes shared with api/washtag.ts
   src/index.ts             /v1/label, /v1/digits, /v1/enrich, /v1/suggest, /v1/appliance
   src/prompts.ts           prompts (Gemini, default model gemini-3.8-flash)
 ```
