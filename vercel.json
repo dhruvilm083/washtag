@@ -22,5 +22,11 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/v1/:op",
+      "destination": "/api/washtag?op=:op"
+    }
   ]
 }
