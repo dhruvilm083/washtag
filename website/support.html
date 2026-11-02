@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Support · Washtag</title>
+<meta name="description" content="Help with Washtag: scanning tips, saved items, washer and dryer, and how to get in touch.">
+<link rel="icon" type="image/png" href="/app/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600&family=Figtree:wght@400;600;700&display=swap">
+<style>
+:root { --bg: #FFFFFF; --ink: #0A0D14; --ink-2: #4B5670; --line: #D5E1F5; --ice: #E4EEFF; --blue: #1F5BE0; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root { --bg: #05080F; --ink: #EEF3FF; --ink-2: #9DAAC4; --line: #1F2C47; --ice: #111D35; --blue: #4C82FF; color-scheme: dark; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 "Figtree", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-left, 0px)) 64px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--line); margin-bottom: 32px; }
+.logo { display: flex; align-items: center; gap: 10px; font: 600 18px "Unbounded", system-ui, sans-serif; color: inherit; text-decoration: none; }
+.logo img { width: 30px; height: 30px; border-radius: 50%; }
+header nav { display: flex; gap: 14px; flex-wrap: wrap; font-size: 15px; }
+a { color: var(--blue); }
+h1 { font: 600 clamp(30px, 6vw, 42px)/1.1 "Unbounded", system-ui, sans-serif; letter-spacing: -.02em; margin: 0 0 8px; }
+h2 { font-size: 21px; margin: 32px 0 8px; }
+.muted { color: var(--ink-2); }
+ul { padding-left: 22px; }
+li { margin: 6px 0; }
+.card { background: var(--ice); border-radius: 16px; padding: 18px 20px; margin: 20px 0; }
+footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="logo" href="/"><img src="/app/icons/icon-192.png" alt="">Washtag</a>
+  <nav><a href="/app/">Web app</a><a href="/support">Support</a><a href="/privacy">Privacy</a></nav>
+</header>
+<main>
+<h1>Support</h1>
+<p class="muted">Help with the Washtag iPhone app and web app.</p>
+<p class="card" id="contact"><b>Contact:</b> a support email address will be listed here before the iPhone app launches.</p>
+
+<h2>Getting a good label reading</h2>
+<ul>
+  <li>Lay the label flat, fill most of the photo with it, and avoid glare from a flash or a window.</li>
+  <li>If symbols are faded or cut off, Washtag says so: check the “How sure Washtag is” panel and the “Double-check on the label” notes.</li>
+  <li>If the label shows a barcode, keep it in the same photo and Washtag looks the product up too.</li>
+</ul>
+
+<h2>Barcodes</h2>
+<ul>
+  <li>Hold the camera straight on to the barcode, with the numbers underneath visible.</li>
+  <li>If a product isn’t found, type the numbers instead, or use the search links under Product details.</li>
+  <li>The free product database allows about 100 lookups a day; if you hit the limit, try again tomorrow.</li>
+</ul>
+
+<h2>Your saved index</h2>
+<ul>
+  <li>Items are saved only on your device. In the web app, use Household → Download backup to keep a copy or move it to another phone.</li>
+  <li>Label items with the people in your household, then filter the index by person.</li>
+</ul>
+
+<h2>Washer, dryer and loads</h2>
+<ul>
+  <li>Add your machines under This load → Your washer &amp; dryer. Looked-up specs show how sure they are; check them against the sticker inside the door.</li>
+  <li>Detergent amounts are starting points. Your detergent’s own cap or scoop markings win.</li>
+</ul>
+
+<h2>Installing the web app</h2>
+<p>Open <a href="/app/">washtag-green.vercel.app/app</a> in Safari, tap Share, then <b>Add to Home Screen</b>. On Android, use the Install button in Chrome.</p>
+
+<h2>Privacy</h2>
+<p>See the <a href="/privacy">privacy policy</a>.</p>
+</main>
+<footer>©2026 Washtag</footer>
+</div>
+</body>
+</html>

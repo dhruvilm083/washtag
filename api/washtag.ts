@@ -6,6 +6,10 @@
 //   POST /api/washtag?op=label|digits|enrich|suggest|appliance
 //   GET  /api/washtag?op=product&src=upcitemdb|opf|obf|off&code=...
 //   GET  /api/washtag?op=health
+//
+// The iPhone app can use this instead of the Cloudflare Worker: vercel.json maps
+// /api/v1/<op> here, so set WASHTAG_API_BASE to https://<site>/api and set the same
+// APP_TOKEN in Vercel's environment variables as in Secrets.xcconfig.
 
 import { HttpError, json, route } from "../backend/src/api";
 
@@ -27,7 +31,9 @@ export default async function handler(req: Request): Promise<Response> {
   const op = url.searchParams.get("op") || "";
   try {
     if (op === "health") return json({ ok: true, ai: Boolean(process.env.GEMINI_API_KEY) });
-    checkSameSite(req, url);
+    // The iPhone app proves itself with the shared app token; browsers by coming from this site.
+    const appToken = process.env.APP_TOKEN;
+    if (!(appToken && req.headers.get("x-washtag-token") === appToken)) checkSameSite(req, url);
 
     if (op === "product" && req.method === "GET") {
       const make = PRODUCT_SOURCES[url.searchParams.get("src") || ""];

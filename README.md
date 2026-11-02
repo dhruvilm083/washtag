@@ -27,6 +27,9 @@ backend/    Cloudflare Worker: holds the Gemini API key (free tier)
 
 ## Quick start
 
+Installing on your own iPhone for free from a Mac: see [`ios/INSTALL.md`](ios/INSTALL.md).
+
+
 ```bash
 # server
 cd backend && npm install && npx wrangler login

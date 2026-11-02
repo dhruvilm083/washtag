@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy policy · Washtag</title>
+<meta name="description" content="How Washtag handles your photos, barcodes and saved items.">
+<link rel="icon" type="image/png" href="/app/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600&family=Figtree:wght@400;600;700&display=swap">
+<style>
+:root { --bg: #FFFFFF; --ink: #0A0D14; --ink-2: #4B5670; --line: #D5E1F5; --ice: #E4EEFF; --blue: #1F5BE0; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root { --bg: #05080F; --ink: #EEF3FF; --ink-2: #9DAAC4; --line: #1F2C47; --ice: #111D35; --blue: #4C82FF; color-scheme: dark; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 "Figtree", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-left, 0px)) 64px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--line); margin-bottom: 32px; }
+.logo { display: flex; align-items: center; gap: 10px; font: 600 18px "Unbounded", system-ui, sans-serif; color: inherit; text-decoration: none; }
+.logo img { width: 30px; height: 30px; border-radius: 50%; }
+header nav { display: flex; gap: 14px; flex-wrap: wrap; font-size: 15px; }
+a { color: var(--blue); }
+h1 { font: 600 clamp(30px, 6vw, 42px)/1.1 "Unbounded", system-ui, sans-serif; letter-spacing: -.02em; margin: 0 0 8px; }
+h2 { font-size: 21px; margin: 32px 0 8px; }
+.muted { color: var(--ink-2); }
+ul { padding-left: 22px; }
+li { margin: 6px 0; }
+.card { background: var(--ice); border-radius: 16px; padding: 18px 20px; margin: 20px 0; }
+footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <a class="logo" href="/"><img src="/app/icons/icon-192.png" alt="">Washtag</a>
+  <nav><a href="/app/">Web app</a><a href="/support">Support</a><a href="/privacy">Privacy</a></nav>
+</header>
+<main>
+<h1>Privacy policy</h1>
+<p class="muted">Last updated 2 November 2026. This covers the Washtag iPhone app and the Washtag web app.</p>
+
+<div class="card">The short version: Washtag has no accounts. Your saved items and household names stay on your device. Photos you scan are sent to an AI service to be read and are not kept by Washtag. The iPhone app shows ads from Google AdMob.</div>
+
+<h2>What stays on your device</h2>
+<p>Your saved index (item names, notes, the care details Washtag read, small thumbnails), the people you add under Household, your washer and dryer details and your settings. They are stored only on your device: in the iPhone app’s storage (included in your normal iCloud device backup if you use it), or in your browser’s storage for the web app. Washtag does not have a copy. Deleting the app, clearing your browser’s site data, or deleting items removes them.</p>
+
+<h2>What is sent off your device, and why</h2>
+<ul>
+  <li><b>Photos you choose to scan.</b> When you tap “Read label” or read a barcode from a photo, a resized copy of that photo is sent through Washtag’s server to Google’s Gemini API, which reads the care symbols, text and barcode digits. Washtag’s server passes the photo on and does not store it. Washtag uses Gemini’s free tier, under which Google may keep and use what it receives to improve its services, including review by people. Don’t scan photos that show anything private. See <a href="https://ai.google.dev/gemini-api/terms">Google’s Gemini API terms</a>.</li>
+  <li><b>Barcode numbers.</b> To look up a product, the barcode number is sent to UPCitemdb and, if needed, the Open Products Facts, Open Beauty Facts and Open Food Facts databases. They receive the number and your device’s IP address, like any website you visit.</li>
+  <li><b>Product and care details.</b> To add care notes and product suggestions, Washtag sends the product’s name, brand and category, the care instructions it read, and any needs you pick (for example “sensitive skin”) to Gemini. Your name and your household names are never sent.</li>
+  <li><b>Washer and dryer lookup.</b> If you look up your machines, the brand and model number you type are sent to Gemini.</li>
+  <li><b>Technical data.</b> Washtag’s servers run on Cloudflare (iPhone app) and Vercel (web app and website). They see your IP address and, from the iPhone app, a random install number used only to stop the free AI service being overused. Washtag does not keep logs of these beyond what those hosts keep briefly to operate and protect their services.</li>
+</ul>
+
+<h2>Ads</h2>
+<p>The free iPhone app shows a short ad from Google AdMob when it opens. AdMob may collect your device’s advertising identifier, IP address, and information about the ads you see and tap, to show and measure ads. Washtag asks permission before ads may use your advertising identifier (Apple’s “Allow tracking” prompt); if you say no, you still get ads, just less personalised ones. In the UK, EEA and Switzerland, Washtag also asks for your consent using Google’s consent tool, and you can change your choice any time under Household → Ad privacy choices. See <a href="https://policies.google.com/technologies/partner-sites">how Google uses information from apps that use its services</a>. The web app shows no ads at the moment; if it does later, this policy will say so.</p>
+
+<h2>What Washtag does not do</h2>
+<ul>
+  <li>No accounts, sign-in, or contact details are collected.</li>
+  <li>Washtag does not sell your data.</li>
+  <li>Washtag does not use your location, contacts or health data.</li>
+</ul>
+
+<h2>Children</h2>
+<p>Washtag is not directed at children under 13 and doesn’t knowingly collect their personal information.</p>
+
+<h2>Your choices</h2>
+<ul>
+  <li>Only scan what you choose to; nothing is uploaded until you tap a read or look-up button.</li>
+  <li>Turn off ad tracking in iPhone Settings → Privacy &amp; Security → Tracking.</li>
+  <li>Delete saved items in the app, or delete the app or the site’s data to remove everything.</li>
+</ul>
+
+<h2>Changes</h2>
+<p>If this policy changes, the new version will be posted here with a new date.</p>
+
+<h2>Contact</h2>
+<p class="card" id="contact"><b>Contact:</b> a support email address will be listed here before the iPhone app launches.</p>
+</main>
+<footer>©2026 Washtag</footer>
+</div>
+</body>
+</html>
