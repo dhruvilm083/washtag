@@ -149,7 +149,7 @@ struct LoadView: View {
                 Text("Washtag recommends \(plan.loads.count) load\(plan.loads.count == 1 ? "" : "s")").font(.title3.weight(.heavy))
                 if plan.totalMinutes > 0 { Text("About \(duration(plan.totalMinutes)) from first wash to last dry.").font(.subheadline).foregroundStyle(Theme.ink2) }
                 ForEach(plan.orderWhy, id: \.self) { Text($0).font(.footnote).foregroundStyle(Theme.ink2) }
-                if store.washer == nil || store.dryer == nil {
+                if store.washer == nil || (store.dryer == nil && store.washer?.isCombo != true) {
                     Text("Using typical machine specs — add your washer and dryer above for settings that match them.").font(.caption).foregroundStyle(Theme.ink2)
                 }
             }

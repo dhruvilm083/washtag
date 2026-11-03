@@ -9,7 +9,7 @@ struct Appliance: Codable, Hashable {
     var brand = ""
     var model = ""
     var name: String?
-    /// washer: front | top_he | top_agitator · dryer: electric | gas | heat_pump | condenser
+    /// washer: front | top_he | top_agitator | combo (washer-dryer in one drum) · dryer: electric | gas | heat_pump | condenser
     var type: String
     var capacityCuFt: Double?
     var capacityKg: Double?
@@ -36,9 +36,22 @@ struct Appliance: Codable, Hashable {
         return t.isEmpty ? (Appliance.typeNames[type] ?? type) : t
     }
 
+    /// A washer-dryer combo washes and dries in the same drum, so it is both machines.
+    var isCombo: Bool { kind == .washer && type == "combo" }
+
+    /// The drying half of a combo. Combos dry only about 60% of what they wash.
+    var comboDryer: Appliance {
+        let dryKg: Double = capacityKgEstimate * 0.6
+        var d = Appliance(kind: .dryer, type: "combo", capacityKg: dryKg, sensorDry: true, steam: steam)
+        d.brand = brand
+        d.model = model
+        d.cycles = cycles
+        return d
+    }
+
     var isHE: Bool { kind == .washer && (detergent ?? (type == "top_agitator" ? "standard" : "he")) == "he" }
 
-    static let washerTypes: [(value: String, label: String)] = [("front", "Front loader"), ("top_he", "Top loader (HE, no agitator)"), ("top_agitator", "Top loader with agitator")]
+    static let washerTypes: [(value: String, label: String)] = [("front", "Front loader"), ("top_he", "Top loader (HE, no agitator)"), ("top_agitator", "Top loader with agitator"), ("combo", "Washer-dryer combo")]
     static let dryerTypes: [(value: String, label: String)] = [("electric", "Electric vented"), ("gas", "Gas"), ("heat_pump", "Heat pump"), ("condenser", "Condenser")]
     static let typeNames = Dictionary(uniqueKeysWithValues: (washerTypes + dryerTypes).map { ($0.value, $0.label) })
 
@@ -57,6 +70,13 @@ struct Appliance: Codable, Hashable {
                              tips: ["Standard or HE detergent both work; add it to the water before the clothes.",
                                     "Don't load above the top row of holes in the tub, so clothes can turn over.",
                                     "The agitator is rough on delicates — use a mesh bag and the Delicates cycle."])
+        case (.washer, "combo"):
+            return Appliance(kind: .washer, type: type, capacityCuFt: 2.8, capacityKg: 6.5, detergent: "he", maxSpinRpm: 1200, hasHeater: true, sensorDry: true, steam: false,
+                             cycles: ["Normal", "Cotton", "Bulky / Bedding", "Towels", "Perm Press", "Delicates", "Wool", "Quick Wash", "Wash + Dry", "Dry Only", "Rinse & Spin"],
+                             tips: ["Use HE detergent only, and a little less than for a full-size washer.",
+                                    "To wash and dry in one go, fill the drum only about half full — it dries less than it washes.",
+                                    "Drying takes longer than in a separate dryer because most combos condense the moisture instead of venting it.",
+                                    "Clean the lint filter and leave the door ajar after each run."])
         case (.washer, _):
             return Appliance(kind: .washer, type: "front", capacityCuFt: 4.5, capacityKg: 10, detergent: "he", maxSpinRpm: 1200, hasHeater: true, steam: false,
                              cycles: ["Normal", "Heavy Duty", "Bulky / Bedding", "Whites", "Towels", "Perm Press", "Delicates", "Hand Wash / Wool", "Quick Wash", "Rinse & Spin", "Self Clean"],

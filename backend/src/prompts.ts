@@ -68,7 +68,7 @@ Up to 4 suggestions and up to 3 avoid entries.`;
 }
 
 export function appliancePrompt(kind: "washer" | "dryer", brand: string, model: string): string {
-  const types = kind === "washer" ? `"front"|"top_he"|"top_agitator"` : `"electric"|"gas"|"heat_pump"|"condenser"`;
+  const types = kind === "washer" ? `"front"|"top_he"|"top_agitator"|"combo"` : `"electric"|"gas"|"heat_pump"|"condenser"`;
   return `You look up the manufacturer's published specifications for a home laundry ${kind}.
 Brand: ${JSON.stringify(brand)}
 Model number: ${JSON.stringify(model)}
