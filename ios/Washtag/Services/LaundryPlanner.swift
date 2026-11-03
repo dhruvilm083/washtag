@@ -46,7 +46,7 @@ enum LaundryPlanner {
         var towels: Bool
         var items: [ScanRecord]
         var notes: [String] = []
-        var kg: Double { items.reduce(0) { $0 + LaundryPlanner.weight($1) } }
+        var kg: Double { items.reduce(0.0) { $0 + LaundryPlanner.weight($1) } }
     }
 
     static func plan(_ items: [ScanRecord], washer: Appliance?, dryer: Appliance?, units: Units) -> Plan {
@@ -197,24 +197,26 @@ enum LaundryPlanner {
         else if c.cycle == "permanent_press" { spin = "Medium" + (rpm.map { " (about \(min($0, 1000)) rpm)" } ?? "") + " to limit creases" }
         else { spin = "High" + (rpm.map { " (up to \($0) rpm)" } ?? "") + " so it dries faster" }
 
-        var washMinutes = ["hand": 35, "gentle": 40, "permanent_press": 50][c.cycle] ?? (g.towels ? 65 : 55)
+        let washTimes: [String: Int] = ["hand": 35, "gentle": 40, "permanent_press": 50]
+        var washMinutes: Int = washTimes[c.cycle] ?? (g.towels ? 65 : 55)
         if isFront { washMinutes += 15 }
 
         // Drying: items that can't tumble come out first; the rest share the strictest heat.
         let tumbleItems = g.items.filter { $0.care?.structured?.tumble != "none" }
         let tc = LoadPlanner.combine(tumbleItems, units: units)
-        let speed = ["heat_pump": 1.6, "condenser": 1.3][dryer.type] ?? 1
+        let speeds: [String: Double] = ["heat_pump": 1.6, "condenser": 1.3]
+        let speed: Double = speeds[dryer.type] ?? 1
         var dryMinutes = 0, dryerLoads = 0
         var setting = "Nothing in this load goes in the dryer."
         if !tumbleItems.isEmpty {
-            let tumbleKg = tumbleItems.reduce(0) { $0 + weight($1) }
+            let tumbleKg: Double = tumbleItems.reduce(0.0) { $0 + weight($1) }
             dryerLoads = Int((tumbleKg / (dryer.capacityKgEstimate * 0.85)).rounded(.up))
             let low = tc.tumble == "low" || delicate
-            let want = low ? ["delicate", "low", "perm", "synthetic"] : g.towels ? ["towel", "heavy", "bulky", "normal"] : c.cycle == "permanent_press" ? ["perm", "synthetic", "casual", "normal"] : ["normal", "cotton", "regular"]
+            let want: [String] = low ? ["delicate", "low", "perm", "synthetic"] : g.towels ? ["towel", "heavy", "bulky", "normal"] : c.cycle == "permanent_press" ? ["perm", "synthetic", "casual", "normal"] : ["normal", "cotton", "regular"]
             let name = machineCycle(dryer.cycles, want) ?? (low ? "Delicates / low heat" : "Normal")
-            let base = low ? 35 : g.towels ? 60 : c.cycle == "permanent_press" ? 40 : 50
-            dryMinutes = Int(Double(base) * speed * max(1, Double(dryerLoads)))
-            setting = "\(name) · \(low ? "low" : g.towels ? "high" : "medium") heat" + (dryer.sensorDry == false ? ", timed about \(Int(Double(base) * speed)) min" : ", sensor dry")
+            let base: Double = low ? 35 : (g.towels ? 60 : (c.cycle == "permanent_press" ? 40 : 50))
+            dryMinutes = Int(base * speed * max(1.0, Double(dryerLoads)))
+            setting = "\(name) · \(low ? "low" : g.towels ? "high" : "medium") heat" + (dryer.sensorDry == false ? ", timed about \(Int(base * speed)) min" : ", sensor dry")
             if dryerLoads > 1 { setting += " · in \(dryerLoads) batches" }
         }
 
