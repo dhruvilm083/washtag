@@ -2,7 +2,7 @@
 // Scans, lookups and suggestions need the network and are never cached.
 // Bump VERSION whenever a file in SHELL changes.
 
-const VERSION = "washtag-app-2";
+const VERSION = "washtag-app-3";
 const SHELL = [
   "/app/", "/app/app.css", "/app/manifest.webmanifest",
   "/app/js/app.js", "/app/js/api.js", "/app/js/appliances.js", "/app/js/barcode.js", "/app/js/config.js", "/app/js/gtin.js",
