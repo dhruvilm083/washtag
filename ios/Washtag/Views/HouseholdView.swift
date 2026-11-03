@@ -49,7 +49,7 @@ struct HouseholdView: View {
                         Button("Ad privacy choices") { Task { await AdsManager.shared.presentPrivacyOptions() } }
                     }
                     if let privacyURL { Link("Privacy policy", destination: privacyURL) }
-                    Link("Help and support", destination: URL(string: "https://washtag-green.vercel.app/support")!)
+                    Link("Help and support", destination: URL(string: "https://washtags.vercel.app/support")!)
                 }
                 Section {
                     Text("Care labels are read by Google Gemini, and products are looked up in UPCitemdb and the Open Products, Beauty and Food Facts databases. Each result shows how confident it is. Detergent amounts are starting points — your detergent’s cap or scoop markings win. Your index stays on this phone.")

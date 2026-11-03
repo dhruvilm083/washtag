@@ -39,7 +39,7 @@ export default async function handler(req: Request): Promise<Response> {
       const make = PRODUCT_SOURCES[url.searchParams.get("src") || ""];
       const code = (url.searchParams.get("code") || "").replace(/\D/g, "");
       if (!make || code.length < 6 || code.length > 14) throw new HttpError(400, "bad_request", "Send a source and a 6–14 digit code.");
-      const res = await fetch(make(code), { headers: { accept: "application/json", "user-agent": "Washtag-Web/1.0 (washtag-green.vercel.app)" } });
+      const res = await fetch(make(code), { headers: { accept: "application/json", "user-agent": "Washtag-Web/1.0 (washtag.app)" } });
       return new Response(await res.text(), { status: res.status, headers: { "content-type": "application/json" } });
     }
 
