@@ -3,13 +3,15 @@
 // enrich prompt only adds care guidance on top of that catalogue data.
 
 export const LABEL_PROMPT = `You are an expert textile care-label reader (ISO 3758 / GINETEX, ASTM D5489, Japanese JIS L 0001, and text-only labels in any language).
-Look at the attached photo. It may show a garment care label, a hang tag, or packaging where care symbols sit beside a barcode.
+Look at the attached photo. It may show a garment care label, a hang tag, a barcode on its own, or a product or its packaging (e.g. a detergent bottle), possibly with care symbols beside a barcode.
+First decide what the photo mainly shows and set "kind".
 Read ONLY what is visible. Never invent a symbol. If a symbol is blurry, cut off or ambiguous, include it with low confidence and add a recheck note.
 Also read any printed text (fibre content, "wash inside out", country, RN/CA numbers, brand) and translate non-English text into English.
 If a barcode is visible, read its digits carefully from the human-readable numbers under the bars.
 
 Reply with ONLY one JSON object in exactly this shape:
 {
+ "kind": "care_label" | "barcode" | "product" | "other",
  "symbolsFound": true,
  "overallConfidence": 0-100,
  "imageQuality": "good" | "fair" | "poor",
@@ -32,11 +34,13 @@ Reply with ONLY one JSON object in exactly this shape:
    "dryClean": "allowed"|"only"|"none"|null },
  "labelText": { "fibres": "e.g. 60% cotton, 40% polyester or null", "other": "other printed text, translated, or null", "language": "original language(s)" },
  "barcode": { "present": true|false, "digits": "digits only or null", "confidence": 0-100 },
+ "numbers": [ { "text": "a printed item code, style/article number, SKU, UPC/EAN or model number exactly as printed", "kind": "upc"|"ean"|"sku"|"style"|"model"|"rn"|"other", "confidence": 0-100 } ],
  "product": { "brand": null or string, "name": null or string, "type": "e.g. t-shirt, jeans, wool jumper, detergent, unknown" },
  "suggestedName": "a short friendly name for this item, e.g. 'Navy wool jumper'",
  "recheck": ["specific things the user should double-check on the physical label"]
 }
-If no care symbols or care text are visible, set symbolsFound to false, explain why in qualityNotes, and leave arrays empty.`;
+"numbers" lists at most 5 codes, most useful for identifying the product first; leave out prices, sizes, dates and fibre percentages.
+If no care symbols or care text are visible, set symbolsFound to false, explain why in qualityNotes, and leave the care arrays empty (still fill kind, barcode, numbers and product).`;
 
 export const DIGITS_PROMPT = `Read the barcode digits in this photo from the human-readable numbers printed under the bars. Reply with ONLY JSON: {"digits": "digits only or null", "confidence": 0-100, "note": "short"}`;
 
@@ -91,5 +95,25 @@ Reply with ONLY one JSON object:
  "cycles": ["cycle names, at most 20"],
  "tips": ["manufacturer recommendations, at most 6, one sentence each"],
  "basis": "one short sentence on where this comes from and how sure you are"
+}`;
+}
+
+export function webSearchPrompt(code: string, hint: string | null): string {
+  return `Search the web to identify the retail product for this code or name: ${JSON.stringify(code)}.
+It may be a UPC/EAN barcode number, a store item number, a SKU, a style/article number printed on a clothing tag or package, or a brand and product name read off packaging.
+${hint ? "Other things seen on the same tag or package: " + JSON.stringify(hint) : ""}
+Only report a product if search results clearly tie it to this exact code (or, for a name, this exact product). Never guess from a partial match.
+
+Reply with ONLY one JSON object, no other text:
+{
+ "found": true|false,
+ "confidence": 0-100,
+ "brand": "string or null",
+ "productName": "string or null",
+ "category": "garment"|"footwear"|"home textile"|"laundry detergent"|"fabric softener"|"stain remover"|"other"|null,
+ "description": "one or two sentences, or null",
+ "material": "fibre content if a result states it, or null",
+ "careNotes": ["care instructions stated in the results for this product, at most 4"],
+ "basis": "one short sentence on what the results showed and how sure you are"
 }`;
 }

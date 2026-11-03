@@ -36,6 +36,9 @@ export function enrich(product, context) {
   return send("enrich", { body: { product: record, context: context ? context.slice(0, 300) : null } });
 }
 
+/** Searches the web (Gemini with Google Search) for a code or product name the databases don't know. */
+export const webSearch = (code, hint) => send("websearch", { body: { code: String(code).slice(0, 80), hint: hint ? String(hint).slice(0, 200) : null } });
+
 export const suggest = (structured, needs, fibres, type) => send("suggest", { body: { structured, needs, fibres, type } });
 
 export const lookupAppliance = (kind, brand, model) =>

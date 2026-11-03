@@ -3,7 +3,7 @@
 // the Worker's routes from backend/src/api.ts. It also relays barcode-database lookups
 // for browsers that the databases won't answer directly.
 //
-//   POST /api/washtag?op=label|digits|enrich|suggest|appliance
+//   POST /api/washtag?op=label|digits|enrich|suggest|appliance|websearch
 //   GET  /api/washtag?op=product&src=upcitemdb|opf|obf|off&code=...
 //   GET  /api/washtag?op=health
 //
@@ -17,7 +17,7 @@ export const config = { runtime: "edge" };
 
 declare const process: { env: Record<string, string | undefined> };
 
-const AI_OPS = new Set(["label", "digits", "enrich", "suggest", "appliance"]);
+const AI_OPS = new Set(["label", "digits", "enrich", "suggest", "appliance", "websearch"]);
 const PRODUCT_SOURCES: Record<string, (code: string) => string> = {
   upcitemdb: (c) => `https://api.upcitemdb.com/prod/trial/lookup?upc=${c}`,
   opf: (c) => `https://world.openproductsfacts.org/api/v2/product/${c}.json?fields=${OFF_FIELDS}`,

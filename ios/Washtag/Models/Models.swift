@@ -3,6 +3,8 @@ import Foundation
 // MARK: - Care label (shape matches LABEL_PROMPT in the backend)
 
 struct CareResult: Codable, Hashable {
+    /// What the photo mainly shows: care_label, barcode, product or other.
+    var kind: String?
     var symbolsFound: Bool?
     var overallConfidence: Double?
     var imageQuality: String?
@@ -12,6 +14,8 @@ struct CareResult: Codable, Hashable {
     var structured: StructuredCare?
     var labelText: LabelText?
     var barcode: LabelBarcode?
+    /// Item codes, style numbers, UPCs and model numbers printed in the photo.
+    var numbers: [LabelNumber]?
     var product: LabelProduct?
     var suggestedName: String?
     var recheck: [String]?
@@ -56,6 +60,12 @@ struct LabelText: Codable, Hashable {
 struct LabelBarcode: Codable, Hashable {
     var present: Bool?
     var digits: String?
+    var confidence: Double?
+}
+
+struct LabelNumber: Codable, Hashable {
+    var text: String?
+    var kind: String?
     var confidence: Double?
 }
 

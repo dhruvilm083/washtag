@@ -20,7 +20,7 @@ struct RecordView: View {
         VStack(alignment: .leading, spacing: 14) {
             if let care = rec.care { CareTagView(name: rec.name, care: care, units: store.units) }
             ConfidencePanel(rec: rec)
-            if rec.upc != nil { ProductPanel(rec: rec) }
+            if rec.upc != nil || rec.product != nil { ProductPanel(rec: rec) }
             if rec.care != nil { suggestionsPanel }
             savePanel
         }
@@ -237,7 +237,7 @@ struct ConfidencePanel: View {
         }
         if let u = rec.upc {
             out.append((u.checksum == true ? "✓" : u.checksum == false ? "✕" : "?",
-                        u.checksum == true ? "\(u.type) check digit is valid" : u.checksum == false ? "Check digit doesn’t match — some digits are probably misread" : "Not a standard UPC/EAN length"))
+                        u.checksum == true ? "\(u.type) check digit is valid" : u.checksum == false ? "Check digit doesn’t match — some digits are probably misread" : "Not a standard UPC/EAN barcode number, so Washtag searched the web for it"))
             out.append((u.via == "on-device decoder" ? "✓" : "·", "Digits \(u.via)"))
             if u.agree == true { out.append(("✓", "Decoded bars and printed numbers agree")) }
             if u.agree == false { out.append(("✕", "Bars read \(u.code) but printed digits look like \(u.visualDigits ?? "")")) }
@@ -253,10 +253,10 @@ struct ProductPanel: View {
     var rec: ScanRecord
     var body: some View {
         Panel(title: "Product details") {
-            if let u = rec.upc { Text("Barcode \(u.code) · \(u.type)").font(.caption.monospaced()).foregroundStyle(Theme.ink2) }
+            if let u = rec.upc { Text(u.type == "Item number" ? "Item number \(u.code)" : "Barcode \(u.code) · \(u.type)").font(.caption.monospaced()).foregroundStyle(Theme.ink2) }
             if let p = rec.product {
                 if !p.found {
-                    Text("**Not found in the product database.** \(p.gs1Region.map { "The code prefix is registered in \($0). " } ?? "")Use the links below to search elsewhere.")
+                    Text("**Not found in the product databases or on the web.** \(p.gs1Region.map { "The code prefix is registered in \($0). " } ?? "")Use the links below to search elsewhere.")
                 } else {
                     HStack(alignment: .top, spacing: 12) {
                         if let s = p.imageURL, let url = URL(string: s) {
@@ -276,7 +276,7 @@ struct ProductPanel: View {
                         Text("**Dosing:** \(dose)").font(.subheadline).padding(10).background(Theme.drySoft, in: RoundedRectangle(cornerRadius: 10))
                     }
                     if let stores = p.stores, !stores.isEmpty {
-                        Text("Where to buy").font(.subheadline.bold()).padding(.top, 4)
+                        Text(p.source == "web" ? "Sources" : "Where to buy").font(.subheadline.bold()).padding(.top, 4)
                         ForEach(stores, id: \.self) { s in
                             if let l = s.link, let url = URL(string: l) {
                                 Link("\(s.name ?? "Store")\(s.price.map { " · \($0)" } ?? "") ↗", destination: url).font(.subheadline)
@@ -301,6 +301,8 @@ struct ProductPanel: View {
     private var productCredit: String {
         switch rec.product?.source {
         case "upcitemdb": return "Product data from UPCitemdb."
+        case "web": return "Found by a web search (Google Search, via Gemini). Check the sources above."
+        case "photo": return "Read from your photo. No product database match."
         case let s? where s.contains("openproductsfacts"): return "Product data from Open Products Facts (ODbL)."
         case let s? where s.contains("openbeautyfacts"): return "Product data from Open Beauty Facts (ODbL)."
         case let s? where s.contains("openfoodfacts"): return "Product data from Open Food Facts (ODbL)."
@@ -316,9 +318,13 @@ struct ProductPanel: View {
         func q(_ s: String) -> String { s.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? s }
         if let brand, let u = URL(string: "https://www.google.com/search?q=" + q("\(brand) \(name) care instructions")) { out.append(("Manufacturer care info", u)) }
         if let code = rec.upc?.code, !code.isEmpty {
-            if let u = URL(string: "https://www.upcitemdb.com/upc/\(code)") { out.append(("UPCitemdb", u)) }
-            if let u = URL(string: "https://world.openproductsfacts.org/product/\(code)") { out.append(("Open Products Facts", u)) }
-            if let u = URL(string: "https://www.google.com/search?q=\(code)") { out.append(("Web search", u)) }
+            if GTIN.isGood(code) {
+                if let u = URL(string: "https://www.upcitemdb.com/upc/\(code)") { out.append(("UPCitemdb", u)) }
+                if let u = URL(string: "https://world.openproductsfacts.org/product/\(code)") { out.append(("Open Products Facts", u)) }
+            }
+            if let u = URL(string: "https://www.google.com/search?q=" + q(code)) { out.append(("Web search", u)) }
+        } else if !name.isEmpty, let u = URL(string: "https://www.google.com/search?q=" + q("\(brand ?? "") \(name)")) {
+            out.append(("Web search", u))
         }
         return out
     }
