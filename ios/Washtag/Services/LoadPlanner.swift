@@ -60,9 +60,9 @@ enum LoadPlanner {
     }
 
     static func dose(_ L: LoadSettings, delicate: Bool, units: Units) -> Dose {
-        let size = ["small": 0.7, "medium": 1, "large": 1.4, "xl": 1.8][L.size] ?? 1
-        let soil = ["light": 0.8, "normal": 1, "heavy": 1.3][L.soil] ?? 1
-        let water = ["soft": 0.85, "medium": 1, "hard": 1.25, "unknown": 1][L.water] ?? 1
+        let size: Double = (["small": 0.7, "medium": 1, "large": 1.4, "xl": 1.8] as [String: Double])[L.size] ?? 1
+        let soil: Double = (["light": 0.8, "normal": 1, "heavy": 1.3] as [String: Double])[L.soil] ?? 1
+        let water: Double = (["soft": 0.85, "medium": 1, "hard": 1.25, "unknown": 1] as [String: Double])[L.water] ?? 1
         let machine = L.machine == "standard" ? 1.25 : 1
         let f = size * soil * water * machine * (delicate ? 0.8 : 1)
 
