@@ -120,7 +120,3 @@ private extension Optional where Wrapped == String {
         return s
     }
 }
-
-private extension String {
-    var nonEmpty: String? { isEmpty ? nil : self }
-}
