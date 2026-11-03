@@ -4,5 +4,10 @@
 // ("ca-pub-…") and an ad unit's slot id here, and one ad shows under the Scan screen.
 export const ADSENSE = { client: "", slot: "" };
 
+// Amazon Associates: put your tracking id (looks like "yourname-20") here and
+// each product suggestion gets a "Shop on Amazon" link that earns a commission.
+// Leave empty to show no shopping links.
+export const AFFILIATE = { amazonTag: "" };
+
 // The iPhone app on the App Store. Placeholder until the app is listed.
 export const STORE_URL = "https://apps.apple.com/app/washtag/id0000000000";
