@@ -97,7 +97,7 @@ private struct ApplianceSection: View {
         case "lookup":
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.seal").foregroundStyle(Theme.good)
-                Text("Specs for \(a.name ?? a.title)" + (a.confidence.map { " · \(Int($0))% sure" } ?? "")).font(.footnote)
+                Text("Specs for \(a.name ?? a.title)\(a.confidence == nil ? "" : " · \(Int(a.confidence!))% sure")").font(.footnote)
             }
             if let b = a.basis { Text(b).font(.caption).foregroundStyle(Theme.ink2) }
         case "manual":
