@@ -11,7 +11,7 @@ import { store, newRecord, PERSON_COLORS } from "./store.js";
 import { loadImage, jpegBase64, thumbnail } from "./image.js";
 import { decodeImage, startLive, liveAvailable } from "./barcode.js";
 import { lookup } from "./lookup.js";
-import { ADSENSE } from "./config.js";
+import { ADSENSE, AFFILIATE } from "./config.js";
 
 /* ---------- helpers ---------- */
 
@@ -390,12 +390,23 @@ function productPanel(rec) {
   </div>`;
 }
 
+// Affiliate link for one suggestion (only when an Amazon tag is set in config.js).
+function shopLink(x) {
+  if (!AFFILIATE.amazonTag) return "";
+  const q = x.examples?.[0] || x.type;
+  if (!q) return "";
+  const href = `https://www.amazon.com/s?k=${encodeURIComponent(q)}&tag=${encodeURIComponent(AFFILIATE.amazonTag)}`;
+  return `<a class="ext small" href="${esc(href)}" target="_blank" rel="noopener noreferrer sponsored">Shop on Amazon ↗</a>`;
+}
+
 function suggestionsList(s) {
   return `<div style="display:flex;flex-direction:column;gap:10px">
     ${(s.suggestions || []).map((x) => `<div><b>${esc(x.type)}</b>
       ${x.why ? `<p class="small">${esc(x.why)}</p>` : ""}
       ${x.examples?.length ? `<p class="tiny muted">Examples: ${esc(x.examples.join(", "))}</p>` : ""}
-      ${x.howMuch ? `<p class="tiny">${esc(x.howMuch)}</p>` : ""}</div>`).join("")}
+      ${x.howMuch ? `<p class="tiny">${esc(x.howMuch)}</p>` : ""}
+      ${shopLink(x)}</div>`).join("")}
+    ${AFFILIATE.amazonTag && s.suggestions?.length ? `<p class="tiny muted">As an Amazon Associate, Washtag earns from qualifying purchases.</p>` : ""}
     ${s.avoid?.length ? `<b class="bad">Avoid</b>${s.avoid.map((x) => `<p class="small"><b>${esc(x.what)}</b> — ${esc(x.why)}</p>`).join("")}` : ""}
   </div>`;
 }
