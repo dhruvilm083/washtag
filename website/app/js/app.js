@@ -88,7 +88,7 @@ function render() {
   const keep = a && a.dataset?.bind ? { bind: a.dataset.bind, start: a.selectionStart, end: a.selectionEnd } : null;
 
   const html = { scan: viewScan, index: viewIndex, item: viewItem, load: viewLoad, household: viewHousehold, machines: viewMachines }[ui.route]();
-  view.innerHTML = installBanner() + (store.saveError ? `<div class="warn">${esc(store.saveError)}</div>` : "") + html;
+  view.innerHTML = installBanner() + (store.saveError ? `<div class="warn">${esc(store.saveError)}</div>` : "") + html + APP_FOOTER;
 
   if (keep) {
     const el = view.querySelector(`[data-bind="${CSS.escape(keep.bind)}"]`);
@@ -96,6 +96,16 @@ function render() {
   }
   if (ui.route === "scan") mountAd();
 }
+
+const APP_FOOTER = `<p class="app-foot tiny muted">©2026 made with 💙 by daedalus</p>`;
+
+// Tapping anywhere outside a text box closes the on-screen keyboard (iOS Safari keeps it open otherwise).
+document.addEventListener("touchstart", (e) => {
+  const a = document.activeElement;
+  if (!a || !a.matches?.("input, textarea, select")) return;
+  if (e.target.closest?.("input, textarea, select, label")) return;
+  a.blur();
+}, { passive: true });
 
 /* ---------- Scan ---------- */
 
@@ -638,7 +648,7 @@ function viewHousehold() {
   return `
   <form class="panel" data-form="person"><h2><label for="newp">Add a person</label></h2>
     <div class="row" style="flex-wrap:nowrap">
-      <input type="text" id="newp" placeholder="Name, e.g. Asha or Kids" data-bind="newPerson" value="${esc(ui.newPerson)}" maxlength="40" autocomplete="off">
+      <input type="text" id="newp" placeholder="Name, e.g. Emma or Kids" data-bind="newPerson" value="${esc(ui.newPerson)}" maxlength="40" autocomplete="off">
       <button class="btn" type="submit">Add</button>
     </div></form>
   <div class="panel"><h2>People</h2>

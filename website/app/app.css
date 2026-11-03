@@ -175,3 +175,4 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 0; width: 100%; }
 .install div { flex: 1; }
 .x { border: 0; background: none; font-size: 22px; line-height: 1; color: var(--ink2); cursor: pointer; padding: 4px 6px; }
 .ad-slot { min-height: 0; }
+.app-foot { text-align: center; margin: 28px 0 8px; }
