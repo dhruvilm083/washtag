@@ -11,7 +11,7 @@ import { store, newRecord, PERSON_COLORS } from "./store.js";
 import { loadImage, jpegBase64, thumbnail } from "./image.js";
 import { decodeImage, startLive, liveAvailable } from "./barcode.js";
 import { lookup, searchName } from "./lookup.js";
-import { ADSENSE } from "./config.js";
+import { ADSENSE, AFFILIATE } from "./config.js";
 
 /* ---------- helpers ---------- */
 
@@ -88,7 +88,7 @@ function render() {
   const keep = a && a.dataset?.bind ? { bind: a.dataset.bind, start: a.selectionStart, end: a.selectionEnd } : null;
 
   const html = { scan: viewScan, index: viewIndex, item: viewItem, load: viewLoad, household: viewHousehold, machines: viewMachines }[ui.route]();
-  view.innerHTML = installBanner() + (store.saveError ? `<div class="warn">${esc(store.saveError)}</div>` : "") + html;
+  view.innerHTML = installBanner() + (store.saveError ? `<div class="warn">${esc(store.saveError)}</div>` : "") + html + APP_FOOTER;
 
   if (keep) {
     const el = view.querySelector(`[data-bind="${CSS.escape(keep.bind)}"]`);
@@ -96,6 +96,16 @@ function render() {
   }
   if (ui.route === "scan") mountAd();
 }
+
+const APP_FOOTER = `<p class="app-foot tiny muted">©2026 made with 💙 by daedalus</p>`;
+
+// Tapping anywhere outside a text box closes the on-screen keyboard (iOS Safari keeps it open otherwise).
+document.addEventListener("touchstart", (e) => {
+  const a = document.activeElement;
+  if (!a || !a.matches?.("input, textarea, select")) return;
+  if (e.target.closest?.("input, textarea, select, label")) return;
+  a.blur();
+}, { passive: true });
 
 /* ---------- Scan ---------- */
 // One camera: the photo or code decides whether it's a care label, a barcode or a product.
@@ -462,12 +472,23 @@ function productPanel(rec) {
   </div>`;
 }
 
+// Affiliate link for one suggestion (only when an Amazon tag is set in config.js).
+function shopLink(x) {
+  if (!AFFILIATE.amazonTag) return "";
+  const q = x.examples?.[0] || x.type;
+  if (!q) return "";
+  const href = `https://www.amazon.com/s?k=${encodeURIComponent(q)}&tag=${encodeURIComponent(AFFILIATE.amazonTag)}`;
+  return `<a class="ext small" href="${esc(href)}" target="_blank" rel="noopener noreferrer sponsored">Shop on Amazon ↗</a>`;
+}
+
 function suggestionsList(s) {
   return `<div style="display:flex;flex-direction:column;gap:10px">
     ${(s.suggestions || []).map((x) => `<div><b>${esc(x.type)}</b>
       ${x.why ? `<p class="small">${esc(x.why)}</p>` : ""}
       ${x.examples?.length ? `<p class="tiny muted">Examples: ${esc(x.examples.join(", "))}</p>` : ""}
-      ${x.howMuch ? `<p class="tiny">${esc(x.howMuch)}</p>` : ""}</div>`).join("")}
+      ${x.howMuch ? `<p class="tiny">${esc(x.howMuch)}</p>` : ""}
+      ${shopLink(x)}</div>`).join("")}
+    ${AFFILIATE.amazonTag && s.suggestions?.length ? `<p class="tiny muted">As an Amazon Associate, Washtag earns from qualifying purchases.</p>` : ""}
     ${s.avoid?.length ? `<b class="bad">Avoid</b>${s.avoid.map((x) => `<p class="small"><b>${esc(x.what)}</b> — ${esc(x.why)}</p>`).join("")}` : ""}
   </div>`;
 }
@@ -569,6 +590,7 @@ function machinesSummary() {
   return `<a class="machines" href="#machines">${ICON.washer}
     <span style="flex:1;min-width:0"><b>Your washer &amp; dryer</b><br>
     <span class="tiny muted">${!w && !d ? "Add your models so Washtag recommends settings for your machines."
+      : Appl.isCombo(w) ? esc(`Washer-dryer combo: ${Appl.title(w)}`)
       : esc([w && `Washer: ${Appl.title(w)}`, d && `Dryer: ${Appl.title(d)}`].filter(Boolean).join(" · "))}</span></span>
     <span class="chev" aria-hidden="true">›</span></a>`;
 }
@@ -674,7 +696,7 @@ function sortPlan(items) {
       <h2 class="h" style="font-size:21px;font-weight:800">Washtag recommends ${plural(p.loads.length, "load")}</h2>
       ${p.totalMinutes > 0 ? `<p class="small muted">About ${duration(p.totalMinutes)} from first wash to last dry.</p>` : ""}
       ${p.orderWhy.map((w) => `<p class="small muted">${esc(w)}</p>`).join("")}
-      ${!store.washer || !store.dryer ? `<p class="tiny muted">Using typical machine specs — <a href="#machines">add your washer and dryer</a> for settings that match them.</p>` : ""}
+      ${!store.washer || (!store.dryer && !Appl.isCombo(store.washer)) ? `<p class="tiny muted">Using typical machine specs — <a href="#machines">add your washer and dryer</a> for settings that match them.</p>` : ""}
     </div>
     ${p.notForMachine.length ? `<div class="warn"><b>Keep out of the machine:</b> ${esc(p.notForMachine.join("; "))}.</div>` : ""}
     ${p.loads.map((l, i) => loadCard(i + 1, p.loads.length, l)).join("")}`;
@@ -720,7 +742,7 @@ function viewHousehold() {
   return `
   <form class="panel" data-form="person"><h2><label for="newp">Add a person</label></h2>
     <div class="row" style="flex-wrap:nowrap">
-      <input type="text" id="newp" placeholder="Name, e.g. Asha or Kids" data-bind="newPerson" value="${esc(ui.newPerson)}" maxlength="40" autocomplete="off">
+      <input type="text" id="newp" placeholder="Name, e.g. Emma or Kids" data-bind="newPerson" value="${esc(ui.newPerson)}" maxlength="40" autocomplete="off">
       <button class="btn" type="submit">Add</button>
     </div></form>
   <div class="panel"><h2>People</h2>
@@ -770,7 +792,9 @@ async function restore(file) {
 
 function viewMachines() {
   return `<p class="small muted">Add your machines and Washtag recommends cycles, load sizes and detergent that match them. Specs from a lookup show how sure they are — check them against your manual or the sticker inside the door.</p>
-    ${applianceSection("washer")}${applianceSection("dryer")}`;
+    ${applianceSection("washer")}${Appl.isCombo(applianceShown("washer"))
+      ? `<section class="panel"><h2>Dryer</h2><p class="small muted">Your washer-dryer combo dries too, so Washtag plans drying in the same drum. You don’t need to add a separate dryer.</p></section>`
+      : applianceSection("dryer")}`;
 }
 
 const applianceShown = (kind) => ui.machines[kind] || store[kind] || Appl.typical(kind, kind === "washer" ? "front" : "electric");

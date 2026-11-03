@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Washtag</title>
-<meta name="description" content="Washtag reads laundry care labels and product barcodes and turns them into clear wash, dry and do-not instructions.">
+<meta name="description" content="Washtag is a laundry planner for iPhone. It sorts the basket into batches and tells you what goes in the washer and dryer, and when, for your own machines, including washer-dryer combos.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -290,6 +290,53 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
   .mode { padding: 24px; border-radius: 28px; }
   .float { font-size: 12.5px; }
 }
+/* plan section: washer / dryer timeline */
+.plan-card { background: var(--ice-2); border: 1px solid var(--line); border-radius: 32px; padding: 28px; }
+.tl-head { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; margin-bottom: 20px; }
+.tl-head b { font-family: var(--f-display); font-weight: 500; font-size: 19px; }
+.tl-head span { color: var(--ink-2); }
+.tl { display: grid; grid-template-columns: 64px 1fr; gap: 10px 12px; align-items: center; }
+.tl-k { font-family: var(--f-mono); font-size: 12px; color: var(--ink-2); }
+.tl-lane { position: relative; height: 44px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.tl-lane i { position: absolute; top: 4px; bottom: 4px; border-radius: 9px; font-style: normal; font-size: 13px; display: flex; align-items: center; gap: 5px; padding: 0 10px; overflow: hidden; white-space: nowrap; border: 2px solid var(--surface); }
+.tl-lane i small { font-size: inherit; opacity: .85; }
+.tl-lane i.w { background: var(--blue); color: var(--on-accent); }
+.tl-lane i.d { background: var(--amber-soft); color: var(--amber-fg); }
+.tl-lane i.r { background: var(--green-soft); color: var(--green-fg); }
+.tl-ticks { display: flex; justify-content: space-between; color: var(--ink-2); font-size: 11.5px; }
+.plan-points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+.pp { border: 1px solid var(--line); border-radius: 28px; padding: 26px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.pp .fi { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--ice); color: var(--blue); }
+.pp .fi svg { width: 22px; height: 22px; }
+.pp p { color: var(--ink-2); font-size: 16px; }
+.combo { margin-top: 16px; background: var(--band); color: var(--white); border: 1px solid var(--band-line); border-radius: 32px; padding: 28px; display: grid; grid-template-columns: .9fr 1.1fr; gap: 28px; align-items: center; }
+.combo h3 { font-size: 22px; margin-bottom: 10px; }
+.combo p { color: #B7C1D6; }
+.combo .eyebrow { color: #A9C3FF; }
+.combo .tl-k { color: #B7C1D6; }
+.combo .tl-lane { background: #141B2C; border-color: #26304A; }
+.combo .tl-lane i { border-color: #141B2C; }
+.combo .tl-lane i.w { background: #4C82FF; color: #fff; }
+.combo .tl-lane i.d { background: #3A2C17; color: #E9B062; }
+.combo .tl-lane i.r { background: #12301F; color: #6BCB8F; }
+/* tiny timeline inside the phone */
+.mtl { display: grid; grid-template-columns: 34px 1fr; gap: 4px 6px; align-items: center; margin-top: 7px; }
+.mtl-k { font-size: 8px; color: var(--a-ink2); }
+.mtl-lane { position: relative; height: 14px; border-radius: 4px; background: var(--a-surface2); }
+.mtl-lane i { position: absolute; top: 1px; bottom: 1px; border-radius: 3px; font-style: normal; font-size: 7.5px; font-weight: 700; display: grid; place-items: center; border: 1px solid var(--a-surface); }
+.mtl-lane i.w { background: var(--a-tub); color: #fff; }
+.mtl-lane i.d { background: var(--a-drysoft); color: var(--a-dry); }
+@media (max-width: 900px) {
+  .plan-points { grid-template-columns: 1fr; }
+  .combo { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  .plan-card, .combo { padding: 20px; border-radius: 24px; }
+  .tl { grid-template-columns: 48px 1fr; gap: 8px; }
+  .tl-lane i { font-size: 11px; padding: 0 6px; }
+  .tl-lane i small { display: none; }
+  .tl-combo .tl-lane i { padding: 0 4px; font-size: 10px; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
   html { scroll-behavior: auto; }
@@ -331,7 +378,7 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
         <span class="logo-mark"><svg width="16" height="16"><use href="#i-tag"/></svg></span>Washtag
       </a>
       <nav class="nav-links" aria-label="Main">
-        <a class="l" href="#modes">How it reads</a>
+        <a class="l" href="#plan">How it plans</a>
         <a class="l" href="#features">Features</a>
         <a class="l" href="#screens">Screens</a>
         <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch to dark mode">
@@ -348,9 +395,9 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
   <div class="hero">
     <div class="wrap hero-grid">
       <div>
-        <span class="pill"><i></i>iPhone · care labels, UPC + your machines</span>
-        <h1>Read the tag.<br><em>Wash it right.</em></h1>
-        <p class="lede">Point your iPhone at a laundry care label or a product barcode. Washtag turns the symbols into plain Wash, Dry, Care and Do-not steps, saves them to your household index, and Washtag recommends how to sort the basket into loads for your own washer and dryer.</p>
+        <span class="pill"><i></i>iPhone · laundry planner for any washer &amp; dryer</span>
+        <h1>Plan every load.<br><em>Finish laundry sooner.</em></h1>
+        <p class="lede">Pick what’s in the basket and Washtag plans laundry day: which things wash together, which batch goes in first, when to move each one to the dryer, and the cycle to pick on your own machines. The washer and dryer stay busy, nothing waits in a wet pile, and nothing shrinks, because Washtag follows every care label.</p>
         <div class="cta-row">
           <a class="btn btn-black store js-store" href="https://apps.apple.com/app/washtag/id0000000000">
             <svg width="22" height="22"><use href="#i-apple"/></svg>
@@ -358,49 +405,50 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
           </a>
           <a class="btn btn-ghost" href="/app/">Use it in your browser</a>
         </div>
-        <p class="cta-note mono">Free · works in Safari on iPhone, add it to your Home Screen · Your index stays on your phone</p>
+        <p class="cta-note mono">Free · washer + dryer, or a washer-dryer combo · works in Safari, add it to your Home Screen</p>
       </div>
 
       <div class="hero-art" aria-hidden="true">
         <div class="blob b1"></div>
         <div class="blob b2"></div>
         <div class="blob b3"></div>
-        <div class="float f1"><span class="ic"><svg><use href="#s-wash30"/></svg></span>Machine wash 30°C</div>
-        <div class="float f2"><span class="ic"><svg><use href="#s-notumble"/></svg></span>Do not tumble dry</div>
-        <div class="float f3"><span class="ic"><svg><use href="#i-gauge"/></svg></span>Read 6 symbols <span class="conf">94%</span></div>
+        <div class="float f1"><span class="ic"><svg><use href="#i-washer"/></svg></span>Towels first, then darks</div>
+        <div class="float f2"><span class="ic"><svg><use href="#s-notumble"/></svg></span>Pull the sweater out first</div>
+        <div class="float f3"><span class="ic"><svg><use href="#i-order"/></svg></span>All done by <span class="conf">2:25 pm</span></div>
 
-        <!-- Hero phone: scan screen -->
+        <!-- Hero phone: the laundry plan -->
         <div class="phone">
           <div class="screen">
             <div class="island"></div>
             <div class="sbar"><span>9:41</span><span class="r"><i style="width:3px;height:5px"></i><i style="width:3px;height:7px"></i><i style="width:3px;height:9px"></i><i style="width:16px;height:8px;border-radius:3px"></i></span></div>
             <div class="scr-body">
-              <div class="scr-title">Washtag</div>
-              <div class="seg">
-                <div class="on"><svg><use href="#i-tag"/></svg><b>Care symbols</b><small>Photo of a wash label</small></div>
-                <div><svg><use href="#i-barcode"/></svg><b>UPC / barcode</b><small>Look up the product</small></div>
-              </div>
-              <div class="dropbox" style="position:relative">
-                <div class="tag">
-                  <div class="t-top">100% MERINO WOOL</div>
-                  <div class="t-sym">
-                    <svg><use href="#s-wash30"/></svg><svg><use href="#s-nobleach"/></svg><svg><use href="#s-notumble"/></svg><svg><use href="#s-ironlow"/></svg><svg><use href="#s-dryclean"/></svg>
-                  </div>
-                  <div class="t-txt">WASH INSIDE OUT · DRY FLAT<br>MADE IN PORTUGAL · RN 54023</div>
-                </div>
-                <div class="scanline"></div>
-                <div class="ios-btns"><span class="ios-btn p">Take photo</span><span class="ios-btn">Choose photo</span></div>
-              </div>
-              <div class="status">Read 6 symbols and the fibre content. Saved as “Grey merino sweater”.</div>
+              <div class="scr-title">This load</div>
+              <div class="card" style="padding:6px 10px;display:flex;align-items:center;gap:8px"><svg style="width:18px;height:18px;color:var(--a-tub)"><use href="#i-washer"/></svg><span><b>Your washer &amp; dryer</b><br><span class="muted">Front loader · Electric dryer</span></span></div>
               <div class="card">
-                <h4>Wash</h4>
-                <div class="muted">Machine wash cold, max 30°C, wool or gentle cycle. Turn inside out.</div>
+                <h4 style="font-size:13px;margin-bottom:2px">Washtag recommends 3 loads</h4>
+                <div class="muted">Start 11:00 · done by 2:25 pm</div>
+                <div class="mtl" aria-hidden="true">
+                  <span class="mtl-k">Washer</span><div class="mtl-lane"><i class="w" style="left:0;width:39%">1</i><i class="w" style="left:39%;width:34%">2</i><i class="w" style="left:73%;width:27%">3</i></div>
+                  <span class="mtl-k">Dryer</span><div class="mtl-lane"><i class="d" style="left:39%;width:29%">1</i><i class="d" style="left:73%;width:24%">2</i></div>
+                </div>
+              </div>
+              <div class="card" style="padding:8px 10px">
+                <div style="font-weight:700">1 · Towels &amp; bedding</div>
+                <div class="muted">Wash 11:00 · dryer at 12:20 · Bulky, high heat</div>
+              </div>
+              <div class="card" style="padding:8px 10px">
+                <div style="font-weight:700">2 · Darks</div>
+                <div class="muted">Wash 12:20 · dryer at 1:30 · medium heat</div>
+              </div>
+              <div class="card" style="padding:8px 10px">
+                <div style="font-weight:700">3 · Wool &amp; silk</div>
+                <div class="muted">Wash 1:30 · low spin · dry flat on the rack</div>
               </div>
             </div>
             <div class="tabbar">
-              <span class="tab on"><svg><use href="#i-tag"/></svg>Scan</span>
+              <span class="tab"><svg><use href="#i-tag"/></svg>Scan</span>
               <span class="tab"><svg><use href="#i-list"/></svg>Index</span>
-              <span class="tab"><svg><use href="#i-basket"/></svg>This load</span>
+              <span class="tab on"><svg><use href="#i-basket"/></svg>This load</span>
               <span class="tab"><svg><use href="#i-people"/></svg>Household</span>
             </div>
           </div>
@@ -409,14 +457,57 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
     </div>
   </div>
 
+  <section id="plan">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <span class="eyebrow mono">How it plans</span>
+          <h2>Laundry day, in the right order.</h2>
+        </div>
+        <p>Washtag groups the basket by care, colour and weight, sizes each batch to your drum, then picks the order that finishes soonest. While one load dries, the next one is already washing.</p>
+      </div>
+      <div class="plan-card">
+        <div class="tl-head"><b>Saturday’s basket</b><span class="mono">Front loader + electric dryer · 3 loads · about 3 h 25 min</span></div>
+        <div class="tl" role="img" aria-label="Timeline: towels wash 11:00 to 12:20 then dry until 1:20; darks wash 12:20 to 1:30 then dry until 2:20; wool washes 1:30 to 2:25 and dries flat on the rack.">
+          <span class="tl-k">Washer</span>
+          <div class="tl-lane"><i class="w" style="left:0;width:39%"><b>Towels</b><small>80 min</small></i><i class="w" style="left:39%;width:34%"><b>Darks</b><small>70 min</small></i><i class="w" style="left:73%;width:27%"><b>Wool</b><small>55 min</small></i></div>
+          <span class="tl-k">Dryer</span>
+          <div class="tl-lane"><i class="d" style="left:39%;width:29%"><b>Towels</b><small>high heat</small></i><i class="d" style="left:73%;width:24%"><b>Darks</b><small>medium heat</small></i></div>
+          <span class="tl-k">Rack</span>
+          <div class="tl-lane"><i class="r" style="left:73%;width:27%">Sweater, dry flat</i></div>
+          <span></span>
+          <div class="tl-ticks mono"><span>11:00</span><span>12:00</span><span>1:00</span><span>2:00</span></div>
+        </div>
+      </div>
+      <div class="plan-points">
+        <div class="pp"><span class="fi"><svg><use href="#i-basket"/></svg></span><h3>Batches that belong together</h3><p>Towels with towels, darks with darks, wool on its own. Each batch is sized to fit your drum, and anything that can’t go in the machine is flagged.</p></div>
+        <div class="pp"><span class="fi"><svg><use href="#i-order"/></svg></span><h3>The order that finishes first</h3><p>Quick-washing, slow-drying loads go first so the dryer is never waiting. Air-dry loads go last. You get a finish time before you start.</p></div>
+        <div class="pp"><span class="fi"><svg><use href="#s-tumblelow"/></svg></span><h3>When to switch</h3><p>Each load says when it moves to the dryer, the heat to use, and which items to pull out and hang up first.</p></div>
+      </div>
+      <div class="combo">
+        <div>
+          <span class="eyebrow mono">Washer-dryer combos</span>
+          <h3>One machine? Washtag plans for that too.</h3>
+          <p>A combo washes and dries in the same drum, so Washtag keeps every batch to what it can dry, runs the air-dry loads first so they dry on the rack while the machine keeps going, and tells you when a single Wash + Dry cycle will do.</p>
+        </div>
+        <div class="tl tl-combo" role="img" aria-label="Combo timeline: wool washes first and goes on the rack, then darks wash and dry, then towels wash and dry.">
+          <span class="tl-k">Combo</span>
+          <div class="tl-lane"><i class="w" style="left:0;width:14%">Wool</i><i class="w" style="left:14%;width:17%">Darks</i><i class="d" style="left:31%;width:23%">dry</i><i class="w" style="left:54%;width:20%">Towels</i><i class="d" style="left:74%;width:26%">dry</i></div>
+          <span class="tl-k">Rack</span>
+          <div class="tl-lane"><i class="r" style="left:14%;width:86%">Wool sweater drying flat</i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="modes">
     <div class="wrap">
       <div class="sec-head">
         <div>
-          <span class="eyebrow mono">Two ways to scan</span>
-          <h2>Symbols on the label, or the code on the box.</h2>
+          <span class="eyebrow mono">How it knows your clothes</span>
+          <h2>Scan each thing once. It’s planned for good.</h2>
         </div>
-        <p>Clothes carry care symbols. Detergents, softeners and stain removers carry barcodes. Washtag reads both, and when a label has symbols and a barcode side by side it reads them together.</p>
+        <p>The plan is only as good as what Washtag knows about each item. Photograph a care label or scan a barcode once, and every future plan respects that item’s temperature, cycle and drying rules.</p>
       </div>
       <div class="modes">
         <article class="mode m1">
@@ -440,11 +531,36 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
       <div class="sec-head">
         <div>
           <span class="eyebrow mono">What you get</span>
-          <h2>Everything the label means, in one place.</h2>
+          <h2>Everything laundry day needs.</h2>
         </div>
-        <p>No more guessing what a square with a circle and two dots wants from you.</p>
+        <p>A plan for the whole basket, settings for your own machines, and the care rules behind every choice.</p>
       </div>
       <div class="feats">
+        <div class="feat">
+          <span class="fi"><svg><use href="#i-basket"/></svg></span>
+          <h3>Sort my laundry</h3>
+          <p>Pick everything in the basket. Washtag recommends how to group it into loads by care, colour and towels, sized to fit your drum, and flags anything to keep out of the machine.</p>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg><use href="#i-order"/></svg></span>
+          <h3>The order to run them</h3>
+          <p>Washtag recommends which load goes first so the dryer is busy while the next one washes, and tells you roughly how long the whole basket takes.</p>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg><use href="#i-washer"/></svg></span>
+          <h3>Your washer &amp; dryer</h3>
+          <p>Add your models to get the maker’s specs: drum size, HE detergent, spin speed and the cycle names on your own control panel. Front loader, top loader or washer-dryer combo, and no model number needed.</p>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg><use href="#s-tumblelow"/></svg></span>
+          <h3>Dryer settings</h3>
+          <p>Washtag recommends the heat level and cycle for your dryer, and which items to pull out to air dry first.</p>
+        </div>
+        <div class="feat">
+          <span class="fi"><svg><use href="#i-drop"/></svg></span>
+          <h3>Per-load amounts</h3>
+          <p>A detergent amount in ml or fl oz for each load, HE or standard to match your washer, as a starting point next to your cap markings.</p>
+        </div>
         <div class="feat">
           <span class="fi"><svg><use href="#i-list"/></svg></span>
           <h3>Wash, Dry, Care, Do not</h3>
@@ -460,31 +576,6 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
           <span class="fi"><svg><use href="#i-people"/></svg></span>
           <h3>Household labels</h3>
           <p>Tag each item with who it belongs to, then filter the index by person.</p>
-        </div>
-        <div class="feat">
-          <span class="fi"><svg><use href="#i-basket"/></svg></span>
-          <h3>Sort my laundry</h3>
-          <p>Pick everything in the basket. Washtag recommends how to group it into loads by care, colour and towels, sized to fit your drum, and flags anything to keep out of the machine.</p>
-        </div>
-        <div class="feat">
-          <span class="fi"><svg><use href="#i-washer"/></svg></span>
-          <h3>Your washer &amp; dryer</h3>
-          <p>Add your models to get the maker’s specs: drum size, HE detergent, spin speed and the cycle names on your own control panel. No model number? Pick the machine type and Washtag uses typical specs.</p>
-        </div>
-        <div class="feat">
-          <span class="fi"><svg><use href="#i-order"/></svg></span>
-          <h3>The order to run them</h3>
-          <p>Washtag recommends which load goes first so the dryer is busy while the next one washes, and tells you roughly how long the whole basket takes.</p>
-        </div>
-        <div class="feat">
-          <span class="fi"><svg><use href="#s-tumblelow"/></svg></span>
-          <h3>Dryer settings</h3>
-          <p>Washtag recommends the heat level and cycle for your dryer, and which items to pull out to air dry first.</p>
-        </div>
-        <div class="feat">
-          <span class="fi"><svg><use href="#i-drop"/></svg></span>
-          <h3>Per-load amounts</h3>
-          <p>A detergent amount in ml or fl oz for each load, HE or standard to match your washer, as a starting point next to your cap markings.</p>
         </div>
         <div class="feat">
           <span class="fi"><svg><use href="#i-cart"/></svg></span>
@@ -506,6 +597,46 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
       </div>
 
       <div class="shots" tabindex="0" aria-label="App screens">
+        <!-- 0. Scan -->
+        <figure class="shot">
+          <div class="phone">
+            <div class="screen">
+              <div class="island"></div>
+              <div class="sbar"><span>9:41</span><span class="r"><i style="width:3px;height:5px"></i><i style="width:3px;height:7px"></i><i style="width:3px;height:9px"></i><i style="width:16px;height:8px;border-radius:3px"></i></span></div>
+              <div class="scr-body">
+                <div class="scr-title">Washtag</div>
+                <div class="seg">
+                  <div class="on"><svg><use href="#i-tag"/></svg><b>Care symbols</b><small>Photo of a wash label</small></div>
+                  <div><svg><use href="#i-barcode"/></svg><b>UPC / barcode</b><small>Look up the product</small></div>
+                </div>
+                <div class="dropbox" style="position:relative">
+                  <div class="tag">
+                    <div class="t-top">100% MERINO WOOL</div>
+                    <div class="t-sym">
+                      <svg><use href="#s-wash30"/></svg><svg><use href="#s-nobleach"/></svg><svg><use href="#s-notumble"/></svg><svg><use href="#s-ironlow"/></svg><svg><use href="#s-dryclean"/></svg>
+                    </div>
+                    <div class="t-txt">WASH INSIDE OUT · DRY FLAT<br>MADE IN PORTUGAL · RN 54023</div>
+                  </div>
+                  <div class="scanline"></div>
+                  <div class="ios-btns"><span class="ios-btn p">Take photo</span><span class="ios-btn">Choose photo</span></div>
+                </div>
+                <div class="status">Read 6 symbols and the fibre content. Saved as “Grey merino sweater”.</div>
+                <div class="card">
+                  <h4>Wash</h4>
+                  <div class="muted">Machine wash cold, max 30°C, wool or gentle cycle. Turn inside out.</div>
+                </div>
+              </div>
+              <div class="tabbar">
+                <span class="tab on"><svg><use href="#i-tag"/></svg>Scan</span>
+                <span class="tab"><svg><use href="#i-list"/></svg>Index</span>
+                <span class="tab"><svg><use href="#i-basket"/></svg>This load</span>
+                <span class="tab"><svg><use href="#i-people"/></svg>Household</span>
+              </div>
+            </div>
+          </div>
+          <figcaption><b>Scan once</b><span>A photo of the care label, read in seconds</span></figcaption>
+        </figure>
+
         <!-- 1. Result -->
         <figure class="shot">
           <div class="phone">
@@ -656,13 +787,13 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
       <div class="sec-head">
         <div>
           <span class="eyebrow mono">How it works</span>
-          <h2>From tag to machine in three taps.</h2>
+          <h2>From basket to folded in three steps.</h2>
         </div>
       </div>
       <ol class="steps" style="list-style:none;margin:0;padding:0">
-        <li class="step"><span class="n">1</span><h3>Scan</h3><p>Photograph the care label, or scan the barcode on the bottle.</p></li>
-        <li class="step"><span class="n">2</span><h3>Save</h3><p>Name the item, tag who it belongs to, and it lands in your index.</p></li>
-        <li class="step"><span class="n">3</span><h3>Wash</h3><p>Pick the basket and Washtag recommends the loads, the order, and the cycle on your machine.</p></li>
+        <li class="step"><span class="n">1</span><h3>Scan once</h3><p>Photograph each care label, or scan a barcode. It lands in your index, tagged with who it belongs to.</p></li>
+        <li class="step"><span class="n">2</span><h3>Pick the basket</h3><p>Tick what’s dirty today. Washtag sorts it into batches sized for your drum.</p></li>
+        <li class="step"><span class="n">3</span><h3>Follow the plan</h3><p>Washtag tells you what goes in first, when to move it to the dryer, and what to hang up instead.</p></li>
       </ol>
     </div>
   </section>
@@ -672,8 +803,8 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
     <div class="blob d2"></div>
     <div class="wrap dl-in">
       <span class="pill" style="background:#1A2030;color:#DCE6FA"><i></i>iPhone · iOS 17 or later</span>
-      <h2>Stop shrinking sweaters.</h2>
-      <p>Washtag is free to download. Scan your first label in under ten seconds.</p>
+      <h2>Laundry day, sorted.</h2>
+      <p>Washtag is free. Scan a few things, pick the basket, and get your first plan in about a minute.</p>
       <div class="cta-row" style="margin-top:6px">
         <a class="btn btn-white store js-store" href="https://apps.apple.com/app/washtag/id0000000000">
           <svg width="22" height="22"><use href="#i-apple"/></svg>
@@ -692,7 +823,7 @@ footer { padding-block: 40px 56px; color: var(--ink-2); font-size: 14px; }
   <div class="wrap foot">
     <a class="logo" href="#top"><span class="logo-mark"><svg width="16" height="16"><use href="#i-tag"/></svg></span>Washtag</a>
     <nav aria-label="Footer">
-      <a href="#modes">How it reads</a>
+      <a href="#plan">How it plans</a>
       <a href="#features">Features</a>
       <a href="#screens">Screens</a>
       <a class="js-store" href="https://apps.apple.com/app/washtag/id0000000000">App Store</a>

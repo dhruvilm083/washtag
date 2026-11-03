@@ -1,7 +1,7 @@
 // "This load" (strictest label wins, then a detergent dose) and "Sort my laundry"
 // (group into loads, order them for washer + dryer). Port of LoadPlanner.swift and LaundryPlanner.swift.
 
-import { capacityKg, typical } from "./appliances.js";
+import { capacityKg, typical, isCombo, comboDryer } from "./appliances.js";
 
 export const NEEDS = [
   ["sensitive", "Sensitive skin"], ["fragrance", "Fragrance-free"], ["baby", "Baby clothes"], ["active", "Activewear odour"],
@@ -199,7 +199,9 @@ function mergeNote(from, into) {
 
 export function plan(items, washerIn, dryerIn, units) {
   const washer = washerIn || typical("washer", "front");
-  const dryer = dryerIn || typical("dryer", "electric");
+  // A washer-dryer combo is both machines, so any separate dryer is ignored.
+  const combo = isCombo(washer);
+  const dryer = combo ? comboDryer(washer) : (dryerIn || typical("dryer", "electric"));
   const notForMachine = [];
   let groups = [];
 
@@ -214,6 +216,8 @@ export function plan(items, washerIn, dryerIn, units) {
 
   // Merge small groups into the closest compatible one, so the plan doesn't run lots of tiny loads.
   const cap = capacityKg(washer);
+  // A combo can only wash and dry in one go when the load fits what it dries.
+  const comboLimit = capacityKg(dryer) * 0.85;
   for (;;) {
     const small = groups.map((g, i) => i).filter((i) => groupKg(groups[i]) < cap * target(groups[i]) * 0.4)
       .sort((x, y) => groupKg(groups[x]) - groupKg(groups[y]));
@@ -245,7 +249,7 @@ export function plan(items, washerIn, dryerIn, units) {
   // Split anything bigger than the drum should take.
   const split = [];
   for (const g of groups) {
-    const limit = cap * target(g);
+    const limit = combo ? Math.min(cap * target(g), comboLimit) : cap * target(g);
     let chunk = { ...g, items: [] };
     for (const it of [...g.items].sort((a, b) => weight(b) - weight(a))) {
       if (chunk.items.length && groupKg(chunk) + weight(it) > limit) {
@@ -257,7 +261,8 @@ export function plan(items, washerIn, dryerIn, units) {
     if (chunk.items.length) split.push(chunk);
   }
 
-  let loads = order(split.map((g) => buildLoad(g, washer, dryer, units)));
+  const built = split.map((g) => buildLoad(g, washer, dryer, units));
+  let loads = combo ? comboOrder(built) : order(built);
 
   // Number repeated titles: "Darks 1", "Darks 2".
   const titles = loads.map((l) => l.title);
@@ -267,12 +272,17 @@ export function plan(items, washerIn, dryerIn, units) {
 
   let t = 0, dryerFree = 0;
   for (const l of loads) {
+    if (combo) { t += l.washMinutes + l.dry.minutes; continue; } // one drum: wash, then dry, then the next load
     t += l.washMinutes;
     if (l.dry.minutes > 0) dryerFree = Math.max(dryerFree, t) + l.dry.minutes;
   }
   const why = [];
-  if (loads.length > 1) why.push("Washtag recommends this order so your dryer is busy while the next load washes: quick-washing, slow-drying loads go first and air-dry loads go last.");
-  if (loads.some((l) => l.dry.dryerLoads > 1)) why.push("Your dryer holds less than a full wash, so Washtag recommends drying the bigger loads in two goes for even drying.");
+  if (combo) {
+    if (loads.length > 1) why.push("Your washer-dryer combo washes and dries in the same drum, so loads run one after another. Washtag recommends running the air-dry loads first so they dry on the rack while the machine works through the rest.");
+    const dryText = units === "us" ? `${Math.round(comboLimit * 2.2)} lb` : `${Math.round(comboLimit)} kg`;
+    why.push(`Washtag keeps each load to about ${dryText}, what your combo can dry, so every load can wash and dry in one go without unloading.`);
+  } else if (loads.length > 1) why.push("Washtag recommends this order so your dryer is busy while the next load washes: quick-washing, slow-drying loads go first and air-dry loads go last.");
+  if (!combo && loads.some((l) => l.dry.dryerLoads > 1)) why.push("Your dryer holds less than a full wash, so Washtag recommends drying the bigger loads in two goes for even drying.");
   return { loads, notForMachine, totalMinutes: Math.max(t, dryerFree), orderWhy: why };
 }
 
@@ -283,13 +293,19 @@ function order(loads) {
   return [...first, ...second];
 }
 
+/** With one drum the total time is fixed, so start the loads that air-dry (or barely tumble) first:
+ * they dry on the rack while the machine keeps going. */
+function comboOrder(loads) {
+  return loads.map((l, i) => [l, i]).sort((a, b) => a[0].dry.minutes - b[0].dry.minutes || a[1] - b[1]).map((x) => x[0]);
+}
+
 function buildLoad(g, washer, dryer, units) {
   const c = combine(g.items, units);
   const kg = groupKg(g);
   const fill = kg / capacityKg(washer);
   const size = fill < 0.35 ? "small" : fill < 0.6 ? "medium" : fill < 0.85 ? "large" : "xl";
   const delicate = g.care >= CARE.gentle || ["gentle", "hand"].includes(c.cycle);
-  const isFront = washer.type === "front";
+  const isFront = washer.type === "front" || isCombo(washer);
 
   let want;
   if (c.cycle === "hand") want = g.care === CARE.wool ? ["wool", "hand", "delicate"] : ["hand", "wool", "delicate"];
@@ -312,7 +328,7 @@ function buildLoad(g, washer, dryer, units) {
   // Drying: items that can't tumble come out first; the rest share the strictest heat.
   const tumbleItems = g.items.filter((it) => it.care?.structured?.tumble !== "none");
   const tc = combine(tumbleItems, units);
-  const speed = { heat_pump: 1.6, condenser: 1.3 }[dryer.type] ?? 1;
+  const speed = { heat_pump: 1.6, condenser: 1.3, combo: 1.8 }[dryer.type] ?? 1;
   let dryMinutes = 0, dryerLoads = 0, setting = "Nothing in this load goes in the dryer.";
   if (tumbleItems.length) {
     const tumbleKg = tumbleItems.reduce((s, it) => s + weight(it), 0);
@@ -320,7 +336,8 @@ function buildLoad(g, washer, dryer, units) {
     const low = tc.tumble === "low" || delicate;
     const w = low ? ["delicate", "low", "perm", "synthetic"] : g.towels ? ["towel", "heavy", "bulky", "normal"]
       : c.cycle === "permanent_press" ? ["perm", "synthetic", "casual", "normal"] : ["normal", "cotton", "regular"];
-    const name = machineCycle(dryer.cycles, w) || (low ? "Delicates / low heat" : "Normal");
+    const comboName = dryer.type === "combo" ? machineCycle(dryer.cycles, ["wash + dry", "wash & dry", "wash and dry", "dry only", "dry"]) : null;
+    const name = comboName || machineCycle(dryer.cycles, w) || (low ? "Delicates / low heat" : "Normal");
     const baseMin = low ? 35 : g.towels ? 60 : c.cycle === "permanent_press" ? 40 : 50;
     dryMinutes = Math.floor(baseMin * speed * Math.max(1, dryerLoads));
     setting = `${name} · ${low ? "low" : g.towels ? "high" : "medium"} heat` + (dryer.sensorDry === false ? `, timed about ${Math.floor(baseMin * speed)} min` : ", sensor dry");
@@ -328,7 +345,10 @@ function buildLoad(g, washer, dryer, units) {
   }
 
   const notes = [...g.notes];
-  if (c.airDry.length && tumbleItems.length) notes.push("Washtag recommends pulling the air-dry items out before the rest go in the dryer.");
+  if (dryer.type === "combo") {
+    if (c.airDry.length && tumbleItems.length) notes.push("Washtag recommends a wash-only cycle first, then pulling out the air-dry items and running Dry on the rest.");
+    else if (tumbleItems.length) notes.push("Everything here can tumble, so Washtag recommends one Wash + Dry cycle that runs straight through.");
+  } else if (c.airDry.length && tumbleItems.length) notes.push("Washtag recommends pulling the air-dry items out before the rest go in the dryer.");
   if (g.colour === "darks") notes.push("Turn darks and jeans inside out and wash cold to keep the colour.");
   if (g.towels) notes.push("Skip fabric softener on towels — it makes them less absorbent.");
   if (delicate && washer.type === "top_agitator") notes.push("Your agitator can snag delicates — use a mesh laundry bag.");

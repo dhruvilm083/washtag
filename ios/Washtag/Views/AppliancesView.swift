@@ -2,6 +2,7 @@ import SwiftUI
 
 /// "Your washer & dryer": look a model up for the maker's specs, or pick the type and use typical specs.
 struct AppliancesView: View {
+    @Environment(AppStore.self) private var store
     var body: some View {
         Form {
             Section {
@@ -9,7 +10,14 @@ struct AppliancesView: View {
                     .font(.footnote).foregroundStyle(Theme.ink2)
             }
             ApplianceSection(kind: .washer)
-            ApplianceSection(kind: .dryer)
+            if store.washer?.isCombo == true {
+                Section("Dryer") {
+                    Text("Your washer-dryer combo dries too, so Washtag plans drying in the same drum. You don’t need to add a separate dryer.")
+                        .font(.footnote).foregroundStyle(Theme.ink2)
+                }
+            } else {
+                ApplianceSection(kind: .dryer)
+            }
         }
         .navigationTitle("Washer & dryer")
     }
@@ -165,6 +173,8 @@ struct MachinesSummary: View {
                     Text("Your washer & dryer").font(.headline)
                     if store.washer == nil && store.dryer == nil {
                         Text("Add your models so Washtag recommends settings for your machines.").font(.caption).foregroundStyle(Theme.ink2)
+                    } else if let w = store.washer, w.isCombo {
+                        Text("Washer-dryer combo: \(w.title)").font(.caption).foregroundStyle(Theme.ink2)
                     } else {
                         Text([store.washer.map { "Washer: \($0.title)" }, store.dryer.map { "Dryer: \($0.title)" }].compactMap { $0 }.joined(separator: " · "))
                             .font(.caption).foregroundStyle(Theme.ink2)

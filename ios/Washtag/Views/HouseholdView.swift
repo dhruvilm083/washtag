@@ -13,7 +13,7 @@ struct HouseholdView: View {
             Form {
                 Section("Add a person") {
                     HStack {
-                        TextField("Name, e.g. Asha or Kids", text: $newName).onSubmit(add)
+                        TextField("Name, e.g. Emma or Kids", text: $newName).onSubmit(add)
                         Button("Add", action: add).disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
@@ -54,6 +54,12 @@ struct HouseholdView: View {
                 Section {
                     Text("Care labels are read by Google Gemini, and products are looked up in UPCitemdb and the Open Products, Beauty and Food Facts databases. Each result shows how confident it is. Detergent amounts are starting points — your detergent’s cap or scoop markings win. Your index stays on this phone.")
                         .font(.footnote).foregroundStyle(Theme.ink2)
+                }
+                Section {
+                    Text("©2026 made with 💙 by daedalus")
+                        .font(.footnote).foregroundStyle(Theme.ink2)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .listRowBackground(Color.clear)
                 }
             }
             .navigationTitle("Household")
