@@ -1,8 +1,11 @@
 // Free product lookup (no API key): UPCitemdb's free tier first, then Open Products,
-// Open Beauty and Open Food Facts. The AI then adds care notes on top. Port of ProductLookup.swift.
+// Open Beauty and Open Food Facts, then a web search (Gemini with Google Search) for anything
+// they don't know, including item and style numbers. The AI then adds care notes on top.
+// Found results are remembered in this browser so the same code always gives the same answer.
+// Port of ProductLookup.swift.
 
 import * as API from "./api.js";
-import { region } from "./gtin.js";
+import { canonical, isGood, region, variants } from "./gtin.js";
 
 const OFF_FIELDS = "product_name,generic_name,brands,categories,image_url,image_front_url,quantity";
 const DIRECT = {
@@ -26,31 +29,87 @@ async function get(src, code) {
   }
 }
 
-export async function lookup(code, context) {
+const CACHE_KEY = "washtag.productCache.v1";
+
+function cached(key) {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || "{}")[key] || null; } catch { return null; }
+}
+
+function remember(key, info) {
+  if (!info?.found) return;
+  try {
+    let all = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
+    if (Object.keys(all).length >= 300) all = {};
+    all[key] = info;
+    localStorage.setItem(CACHE_KEY, JSON.stringify(all));
+  } catch { /* storage full or blocked */ }
+}
+
+/** Looks up a barcode or item number. hint: other words seen on the tag or package, for the web search. */
+export async function lookup(raw, context, hint = null) {
+  const barcode = isGood(canonical(raw));
+  const code = barcode ? canonical(raw) : String(raw).trim();
+  const hit = cached(code);
+  if (hit) return hit;
+
   let info = null;
   const failures = [];
 
-  try { info = await upcItemDB(code); } catch (e) { failures.push(e.message); }
-  if (!info) {
-    for (const [src, host, name] of OPEN_FACTS) {
-      try { info = await openFacts(code, src, host, name); } catch { info = null; }
-      if (info) break;
+  if (barcode) {
+    try { info = await upcItemDB(code); } catch (e) { failures.push(e.message); }
+    outer: for (const [src, host, name] of info ? [] : OPEN_FACTS) {
+      for (const v of variants(code)) {
+        try { info = await openFacts(v, src, host, name); } catch { info = null; }
+        if (info) break outer;
+      }
     }
   }
 
+  // Nothing in the databases (or not a barcode number at all): search the web for it.
   if (!info) {
-    return { found: false, source: null, confidence: 0, basis: failures[0] || "No free product database has a record of this code.",
-      stores: [], gs1Region: region(code), careNotes: [] };
+    try { info = await webLookup(code, hint || context, barcode ? region(code) : null); } catch (e) { failures.push(e.message); }
+  }
+
+  if (!info) {
+    const what = barcode ? "No free product database or web result has a record of this code." : "A web search didn't find a product for this number.";
+    return { found: false, source: null, confidence: 0, basis: failures[0] ? `${what} (${failures[0]})` : what,
+      stores: [], gs1Region: barcode ? region(code) : null, careNotes: [] };
   }
 
   // Ask the AI for care notes; the product data is still useful if this fails.
-  try {
-    const e = await API.enrich(info, context);
-    if (e.category) info.category = e.category;
-    info.careNotes = e.careNotes || [];
-    info.detergentUse = e.detergentUse || null;
-  } catch { /* keep the catalogue data */ }
+  if (info.source !== "web" || !info.careNotes?.length) {
+    try {
+      const e = await API.enrich(info, context);
+      if (e.category) info.category = e.category;
+      if (e.careNotes?.length || !info.careNotes) info.careNotes = e.careNotes || [];
+      info.detergentUse = e.detergentUse || null;
+    } catch { /* keep the catalogue data */ }
+  }
+  remember(code, info);
   return info;
+}
+
+/** Identifies a product from a photo with no code on it (brand and name the AI read), by web search. */
+export async function searchName(name, hint) {
+  const key = "name:" + name.toLowerCase();
+  const hit = cached(key);
+  if (hit) return hit;
+  let info = null;
+  try { info = await webLookup(name, hint, null); } catch { info = null; }
+  remember(key, info);
+  return info;
+}
+
+async function webLookup(query, hint, gs1Region) {
+  const r = await API.webSearch(query, hint);
+  if (r.found !== true || !(nonEmpty(r.productName) || nonEmpty(r.brand))) return null;
+  return {
+    found: true, source: "web", confidence: Math.min(r.confidence ?? 50, 80), basis: nonEmpty(r.basis) || "Found by a web search",
+    brand: nonEmpty(r.brand), manufacturer: null, productName: nonEmpty(r.productName), category: nonEmpty(r.category),
+    description: nonEmpty(r.description), material: nonEmpty(r.material), color: null, imageURL: null,
+    stores: (r.sources || []).filter((x) => x.url).map((x) => ({ name: x.title || "Source", country: null, price: null, link: x.url })),
+    gs1Region, careNotes: Array.isArray(r.careNotes) ? r.careNotes : [], detergentUse: null,
+  };
 }
 
 async function upcItemDB(code) {

@@ -3,37 +3,105 @@ import Foundation
 /// Free product lookup, run from the phone (no API key needed):
 /// 1. UPCitemdb free tier — broad retail database (clothing, household, detergents). 100 lookups a day per network.
 /// 2. Open Products Facts, Open Beauty Facts, Open Food Facts — open community databases, used when UPCitemdb has no match.
+/// 3. A web search (Gemini with Google Search, free tier) for anything the databases don't know,
+///    including store item numbers and style numbers that aren't barcodes.
 /// The AI then adds care notes on top of whatever was found.
 enum ProductLookup {
     private static let userAgent = "Washtag-iOS/1.0 (personal app)"
 
-    static func lookup(_ code: String, context: String?) async -> ProductInfo {
+    /// Looks up a barcode or item number. Results that were found are remembered on the phone,
+    /// so scanning the same code again always gives the same answer (and saves the daily limits).
+    /// - hint: other words seen on the tag or package, to help a web search.
+    static func lookup(_ raw: String, context: String?, hint: String? = nil) async -> ProductInfo {
+        let isBarcode = GTIN.isGood(GTIN.canonical(raw))
+        let code = isBarcode ? GTIN.canonical(raw) : raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let cached = cached(code) { return cached }
+
         var info: ProductInfo?
         var failures: [String] = []
 
-        do { info = try await upcItemDB(code) } catch { failures.append(error.localizedDescription) }
-        if info == nil {
-            for (host, name) in [("world.openproductsfacts.org", "Open Products Facts"),
-                                 ("world.openbeautyfacts.org", "Open Beauty Facts"),
-                                 ("world.openfoodfacts.org", "Open Food Facts")] {
-                let hit: ProductInfo? = try? await openFacts(code, host: host, sourceName: name)
-                if let hit { info = hit; break }
+        if isBarcode {
+            do { info = try await upcItemDB(code) } catch { failures.append(error.localizedDescription) }
+            if info == nil {
+                outer: for (host, name) in [("world.openproductsfacts.org", "Open Products Facts"),
+                                            ("world.openbeautyfacts.org", "Open Beauty Facts"),
+                                            ("world.openfoodfacts.org", "Open Food Facts")] {
+                    for variant in GTIN.variants(code) {
+                        let hit: ProductInfo? = try? await openFacts(variant, host: host, sourceName: name)
+                        if let hit { info = hit; break outer }
+                    }
+                }
             }
         }
 
+        // Nothing in the databases (or not a barcode number at all): search the web for it.
+        if info == nil {
+            do { info = try await webLookup(code, hint: hint ?? context, region: isBarcode ? GTIN.region(code) : nil) }
+            catch { failures.append(error.localizedDescription) }
+        }
+
         guard var found = info else {
-            let basis = failures.first ?? "No free product database has a record of this code."
-            return ProductInfo(found: false, source: nil, confidence: 0, basis: basis, stores: [], gs1Region: GTIN.region(code), careNotes: [])
+            let what = isBarcode ? "No free product database or web result has a record of this code." : "A web search didn't find a product for this number."
+            let basis = failures.first.map { "\(what) (\($0))" } ?? what
+            return ProductInfo(found: false, source: nil, confidence: 0, basis: basis, stores: [],
+                               gs1Region: isBarcode ? GTIN.region(code) : nil, careNotes: [])
         }
 
         // Ask the AI for care notes; the product data is still useful if this fails.
-        let enrichment: APIClient.Enrichment? = try? await APIClient.shared.enrich(product: found, context: context)
-        if let enrich = enrichment {
-            if let c = enrich.category, !c.isEmpty { found.category = c }
-            found.careNotes = enrich.careNotes ?? []
-            found.detergentUse = enrich.detergentUse
+        if found.source != "web" || (found.careNotes ?? []).isEmpty {
+            let enrichment: APIClient.Enrichment? = try? await APIClient.shared.enrich(product: found, context: context)
+            if let enrich = enrichment {
+                if let c = enrich.category, !c.isEmpty { found.category = c }
+                if let notes = enrich.careNotes, !notes.isEmpty || found.careNotes == nil { found.careNotes = notes }
+                found.detergentUse = enrich.detergentUse
+            }
         }
+        remember(found, for: code)
         return found
+    }
+
+    /// Identifies a product from a photo with no code on it (brand and name the AI read), by web search.
+    static func search(name: String, hint: String?) async -> ProductInfo? {
+        let key = "name:" + name.lowercased()
+        if let cached = cached(key) { return cached }
+        guard let found = try? await webLookup(name, hint: hint, region: nil) else { return nil }
+        remember(found, for: key)
+        return found
+    }
+
+    // MARK: Web search (Gemini with Google Search, through the Washtag server)
+
+    private static func webLookup(_ query: String, hint: String?, region: String?) async throws -> ProductInfo? {
+        let r = try await APIClient.shared.webSearch(query: query, hint: hint)
+        guard r.found == true, r.productName.nonEmpty != nil || r.brand.nonEmpty != nil else { return nil }
+        let sources: [ProductInfo.Store] = (r.sources ?? []).compactMap { s in
+            guard let url = s.url, !url.isEmpty else { return nil }
+            return ProductInfo.Store(name: s.title.nonEmpty ?? "Source", country: nil, price: nil, link: url)
+        }
+        return ProductInfo(
+            found: true, source: "web", confidence: min(r.confidence ?? 50, 80),
+            basis: r.basis.nonEmpty ?? "Found by a web search",
+            brand: r.brand.nonEmpty, manufacturer: nil, productName: r.productName.nonEmpty, category: r.category.nonEmpty,
+            description: r.description.nonEmpty, material: r.material.nonEmpty, color: nil, imageURL: nil,
+            stores: sources, gs1Region: region, careNotes: r.careNotes ?? [], detergentUse: nil)
+    }
+
+    // MARK: Remembered results
+
+    private static let cacheKey = "wt.productCache.v1"
+
+    private static func cached(_ code: String) -> ProductInfo? {
+        guard let dict = UserDefaults.standard.dictionary(forKey: cacheKey) as? [String: Data],
+              let data = dict[code] else { return nil }
+        return try? JSONDecoder().decode(ProductInfo.self, from: data)
+    }
+
+    private static func remember(_ info: ProductInfo, for code: String) {
+        guard info.found, let data = try? JSONEncoder().encode(info) else { return }
+        var dict = (UserDefaults.standard.dictionary(forKey: cacheKey) as? [String: Data]) ?? [:]
+        if dict.count >= 300 { dict.removeAll() }
+        dict[code] = data
+        UserDefaults.standard.set(dict, forKey: cacheKey)
     }
 
     // MARK: UPCitemdb (free trial endpoint, no key)

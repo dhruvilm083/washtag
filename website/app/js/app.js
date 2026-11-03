@@ -10,7 +10,7 @@ import { careSymbol, symbolFor } from "./symbols.js";
 import { store, newRecord, PERSON_COLORS } from "./store.js";
 import { loadImage, jpegBase64, thumbnail } from "./image.js";
 import { decodeImage, startLive, liveAvailable } from "./barcode.js";
-import { lookup } from "./lookup.js";
+import { lookup, searchName } from "./lookup.js";
 import { ADSENSE, AFFILIATE } from "./config.js";
 
 /* ---------- helpers ---------- */
@@ -38,7 +38,7 @@ const ICON = {
 
 const ui = {
   route: "scan", itemId: null,
-  scan: { mode: "label", img: null, imgURL: null, status: null, statusErr: false, busy: false, current: null, typed: "", run: 0 },
+  scan: { img: null, imgURL: null, status: null, statusErr: false, busy: false, current: null, typed: "", run: 0 },
   detail: null,                       // working copy of the saved item being viewed
   recUI: {},                          // per record: { needs, suggesting, suggestError }
   index: { query: "", person: null },
@@ -46,7 +46,7 @@ const ui = {
   machines: { washer: null, dryer: null, looking: {}, error: {} },
   newPerson: "",
   installPrompt: null,
-  stopLive: null,
+  live: null,
 };
 
 const recUI = (id) => (ui.recUI[id] ||= { needs: [], suggesting: false, suggestError: null });
@@ -108,51 +108,46 @@ document.addEventListener("touchstart", (e) => {
 }, { passive: true });
 
 /* ---------- Scan ---------- */
+// One camera: the photo or code decides whether it's a care label, a barcode or a product.
 
 function viewScan() {
   const s = ui.scan;
-  const label = s.mode === "label";
   return `
-  <div class="modes" role="group" aria-label="Scan mode">
-    <button type="button" data-act="mode" data-v="label" aria-pressed="${label}">${ICON.tag}<b>Care symbols</b><span>Photo of a wash label</span></button>
-    <button type="button" data-act="mode" data-v="upc" aria-pressed="${!label}">${ICON.barcode}<b>UPC / barcode</b><span>Look up the product</span></button>
-  </div>
-  <p class="small muted">${label
-    ? "Photograph the care label flat and in focus. If the symbols sit next to a barcode, keep both in frame — Washtag reads both."
-    : "Point the camera at the barcode, photograph it straight on, or type the numbers."}</p>
   <div class="photo">
-    ${s.imgURL ? `<img src="${s.imgURL}" alt="Your photo">` : `<b>${label ? "Add a photo of the label" : "Add a photo of the barcode"}</b>`}
+    ${s.imgURL ? `<img src="${s.imgURL}" alt="Your photo">` : `<b>Scan anything laundry</b>
+      <p class="small muted" style="margin:0;text-align:center">Point the camera at a care label, a barcode, or a product like a detergent bottle. Washtag works out which it is.</p>`}
+    <button class="btn primary" type="button" data-act="scan-open" ${s.busy ? "disabled" : ""}>${ICON.viewfinder}Scan</button>
     <div class="row" style="justify-content:center">
-      <button class="btn primary" type="button" data-act="camera">${ICON.camera}Take photo</button>
       <button class="btn" type="button" data-act="pick">${ICON.photo}Choose photo</button>
+      ${s.img && !s.busy ? `<button class="btn" type="button" data-act="retry">Read again</button>` : ""}
     </div>
-    ${!label && liveAvailable() ? `<button class="btn" type="button" data-act="live">${ICON.viewfinder}Scan live with camera</button>` : ""}
   </div>
-  ${!label ? manualEntry() : ""}
-  <div class="row">
-    <button class="btn primary" type="button" data-act="scan" ${!s.img || s.busy ? "disabled" : ""}>${label ? "Read label" : "Read barcode"}</button>
-    ${s.busy ? `<button class="btn" type="button" data-act="stop">Stop</button>` : ""}
-  </div>
+  ${manualEntry()}
+  ${s.busy ? `<div class="row"><button class="btn" type="button" data-act="stop">Stop</button></div>` : ""}
   ${s.status ? `<div class="status ${s.statusErr ? "err" : ""}" role="status">${s.busy ? `<span class="spin" aria-hidden="true"></span>` : ""}<span>${esc(s.status)}</span></div>` : ""}
   ${s.current ? recordView(s.current, "scan") : ""}
   <div class="ad-slot" id="ad"></div>`;
 }
 
+function typedHint(raw) {
+  const v = String(raw || "").trim();
+  if (!v) return "";
+  if (!/^\d+$/.test(v)) return "Not a barcode number — Washtag will search the web for it.";
+  const ok = GTIN.isValid(v);
+  return ok == null ? `${v.length} digits — not a UPC/EAN length (12, 13 or 8), so Washtag will search the web for it`
+    : ok ? `✓ Valid ${GTIN.type(v)} check digit` : "✕ Check digit doesn’t match — recheck the numbers, or Washtag will search the web for it as typed";
+}
+
 function manualEntry() {
-  const v = ui.scan.typed.replace(/\D/g, "");
-  let hint = "";
-  if (v) {
-    const ok = GTIN.isValid(v);
-    hint = `<p class="tiny ${ok === false ? "bad" : "muted"}" id="typed-hint">${ok == null ? `${v.length} digits — UPC is 12, EAN is 13 or 8`
-      : ok ? `✓ Valid ${GTIN.type(v)} check digit` : "✕ Check digit doesn’t match — recheck the numbers"}</p>`;
-  } else hint = `<p class="tiny muted" id="typed-hint"></p>`;
+  const v = ui.scan.typed.trim();
+  const bad = /^\d+$/.test(v) && GTIN.isValid(v) === false;
   return `<form class="panel" data-form="typed">
-    <h2><label for="typed">Or type the number under the barcode</label></h2>
+    <h2><label for="typed">Or type a barcode or item number</label></h2>
     <div class="row" style="flex-wrap:nowrap">
-      <input type="text" id="typed" inputmode="numeric" autocomplete="off" placeholder="e.g. 012345678905" data-bind="scan.typed" value="${esc(ui.scan.typed)}">
+      <input type="text" id="typed" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="search" placeholder="e.g. 012345678905" data-bind="scan.typed" value="${esc(ui.scan.typed)}">
       <button class="btn" type="submit">Look up</button>
     </div>
-    ${hint}
+    <p class="tiny ${bad ? "bad" : "muted"}" id="typed-hint">${esc(typedHint(v))}</p>
   </form>`;
 }
 
@@ -176,65 +171,127 @@ async function run(work) {
   if (alive()) { ui.scan.busy = false; render(); }
 }
 
-async function scanPhoto() {
-  const img = ui.scan.img;
-  if (!img) return;
-  if (ui.scan.mode === "label") await run((alive) => runLabel(img, alive));
-  else await run((alive) => runUPCPhoto(img, alive));
-}
+const isUnknown = (s) => !s || !String(s).trim() || String(s).trim().toLowerCase() === "unknown";
 
-async function runLabel(img, alive) {
-  setStatus("Reading the label… this usually takes 5–20 seconds.");
-  const decoded = decodeImage(img);
-  const care = await API.readLabel(jpegBase64(img));
-  const bars = await decoded;
-  if (!alive()) return;
-  const rec = newRecord("label");
-  rec.thumbnail = thumbnail(img);
-  rec.care = care;
-  rec.name = care.suggestedName || care.product?.name || "Unnamed item";
-  const visual = care.barcode?.present === true ? GTIN.digitsOnly(care.barcode?.digits) : null;
-  ui.scan.current = rec;
-  if (bars || visual) {
-    rec.upc = GTIN.build({ decoded: bars, visual, visualConfidence: care.barcode?.confidence });
-    setStatus("Found a barcode beside the symbols — looking up the product…");
-    const context = [care.product?.type, care.labelText?.fibres, care.product?.brand].filter(Boolean).join(" ");
-    const product = await lookup(rec.upc.code, context);
-    if (!alive()) return;
-    rec.product = product;
+/** Picks the barcode number: bars decoded on the device first, then digits the AI read off the print. */
+function chooseCode(bars, care) {
+  const aiCodes = [];
+  const d = GTIN.digitsOnly(care?.barcode?.digits);
+  if (d && GTIN.isGood(GTIN.canonical(d))) aiCodes.push(GTIN.canonical(d));
+  for (const n of care?.numbers || []) {
+    const t = GTIN.digitsOnly(n?.text);
+    if (!t) continue;
+    const c = GTIN.canonical(t);
+    if (GTIN.isGood(c) && !aiCodes.includes(c)) aiCodes.push(c);
   }
+  if (bars) return GTIN.build({ decoded: bars, visual: aiCodes.includes(bars) ? bars : aiCodes[0] ?? null, visualConfidence: care?.barcode?.confidence ?? null });
+  if (aiCodes.length) return GTIN.build({ visual: aiCodes[0], visualConfidence: Math.min(care?.barcode?.confidence ?? 60, 65) });
+  return null;
 }
 
-async function runUPCPhoto(img, alive) {
-  setStatus("Looking for a barcode in the photo…");
-  const decoded = await decodeImage(img);
-  if (!alive()) return;
-  setStatus("Reading the printed digits to double-check…");
-  let printed = null;
-  try { printed = await API.readDigits(jpegBase64(img)); } catch { printed = null; }
-  if (!alive()) return;
-  const visual = GTIN.digitsOnly(printed?.digits);
-  if (!decoded && !visual) throw new Error("No barcode found in that photo. Get closer, keep it straight on with the numbers visible, or type the numbers.");
-  const rec = newRecord("upc");
-  rec.thumbnail = thumbnail(img);
-  rec.upc = GTIN.build({ decoded, visual, visualConfidence: printed?.confidence });
-  ui.scan.current = rec;
-  setStatus("Looking up the product…");
-  const product = await lookup(rec.upc.code, null);
-  if (!alive()) return;
-  rec.product = product;
-  rec.name = product.productName || product.brand || `Item ${rec.upc.code}`;
+/** A store item, style or model number to search for when there's no barcode number. */
+function chooseItemNumber(care) {
+  const useful = ["sku", "style", "model", "upc", "ean", "other"];
+  const n = (care?.numbers || []).find((x) => useful.includes(x?.kind || "other") && (x?.confidence ?? 0) >= 60
+    && String(x?.text || "").replace(/\D/g, "").length >= 5);
+  return n ? String(n.text).trim() : null;
+}
+
+/** Not a standard barcode number: an item, style or SKU number to search for. */
+function itemInfo(raw, via) {
+  const c = GTIN.canonical(raw);
+  if (GTIN.isGood(c)) {
+    if (via === "typed") return GTIN.build({ typed: c });
+    if (via === "decoded") return GTIN.build({ decoded: c });
+    return GTIN.build({ visual: c, visualConfidence: 75 });
+  }
+  const digitsOnly = /^\d+$/.test(raw);
+  return {
+    code: raw, type: digitsOnly && [8, 12, 13, 14].includes(raw.length) ? GTIN.type(raw) : "Item number",
+    checksum: digitsOnly ? GTIN.isValid(raw) : null, via: via === "typed" ? "typed by you" : "read from printed digits",
+    visualDigits: null, agree: null, readConfidence: via === "typed" ? 70 : 55,
+  };
+}
+
+function productHint(care) {
+  if (!care) return null;
+  const parts = [care.product?.brand, care.product?.name, care.product?.type, care.labelText?.fibres].filter((x) => !isUnknown(x));
+  return parts.length ? parts.join(", ") : null;
+}
+
+/** A photo from the camera or library: work out what it shows and read it. */
+async function analyze(img) {
+  await run(async (alive) => {
+    setStatus("Reading the photo… this usually takes 5–20 seconds.");
+    const decoded = decodeImage(img);
+    let care = null, aiError = null;
+    try { care = await API.readLabel(jpegBase64(img)); } catch (e) { aiError = e; }
+    const bars = await decoded;
+    if (!alive()) return;
+
+    const upc = chooseCode(bars, care);
+    const item = upc ? null : chooseItemNumber(care);
+    const isLabel = care?.symbolsFound === true;
+    const hint = productHint(care);
+    const rec = newRecord(isLabel ? "label" : "upc");
+    rec.thumbnail = thumbnail(img);
+
+    if (isLabel) {
+      rec.care = care;
+      rec.name = care.suggestedName || care.product?.name || "Unnamed item";
+      ui.scan.current = rec;
+      if (!upc && !item) return;
+      rec.upc = upc || itemInfo(item, "printed");
+      setStatus("Found a code on the label — looking up the product…");
+      const context = [care.product?.type, care.labelText?.fibres, care.product?.brand].filter(Boolean).join(" ");
+      const product = await lookup(rec.upc.code, context, hint);
+      if (!alive()) return;
+      rec.product = product;
+      return;
+    }
+
+    const found = upc || (item ? itemInfo(item, "printed") : null);
+    if (found) {
+      rec.upc = found;
+      rec.name = care?.suggestedName || `Item ${found.code}`;
+      ui.scan.current = rec;
+      setStatus(GTIN.isGood(found.code) ? "Found a barcode — looking up the product…" : `Found item number ${found.code} — searching the web…`);
+      const product = await lookup(found.code, null, hint);
+      if (!alive()) return;
+      rec.product = product;
+      rec.name = product.productName || product.brand || rec.name;
+      return;
+    }
+
+    // A product photo with no readable code: search for what the AI read on it.
+    const name = care ? [care.product?.brand, care.product?.name].filter((x) => !isUnknown(x)).join(" ") : "";
+    if (name) {
+      rec.name = care.suggestedName || name;
+      ui.scan.current = rec;
+      setStatus(`Looking up ${name}…`);
+      const hit = await searchName(name, hint);
+      if (!alive()) return;
+      rec.product = hit || { found: true, source: "photo", confidence: Math.min(care.overallConfidence ?? 50, 60),
+        basis: "Read from the packaging in your photo; no barcode was visible.", brand: care.product?.brand || null,
+        productName: care.product?.name || null, category: care.product?.type || null, stores: [], careNotes: [] };
+      return;
+    }
+
+    if (aiError) throw aiError;
+    throw new Error("Couldn't find a care label, barcode or product in that photo. Get closer with good light and try again, or type the number.");
+  });
 }
 
 async function lookUpCode(code, via) {
-  const digits = String(code).replace(/\D/g, "");
-  if (!digits) { setStatus("Type the digits under the barcode first.", true); return; }
+  const raw = String(code || "").trim();
+  if (raw.length < 5) { setStatus("Type the barcode or item number first (at least 5 characters).", true); return; }
+  if (via !== "typed") clearPhoto();
   await run(async (alive) => {
     const rec = newRecord("upc");
-    rec.upc = via === "typed" ? GTIN.build({ typed: digits }) : GTIN.build({ decoded: digits });
-    rec.name = `Item ${digits}`;
+    rec.upc = itemInfo(raw, via);
+    rec.name = `Item ${rec.upc.code}`;
     ui.scan.current = rec;
-    setStatus("Looking up the product…");
+    setStatus(GTIN.isGood(rec.upc.code) ? "Looking up the product…" : "Searching the web for this number…");
     const product = await lookup(rec.upc.code, null);
     if (!alive()) return;
     rec.product = product;
@@ -242,37 +299,58 @@ async function lookUpCode(code, via) {
   });
 }
 
+function clearPhoto() {
+  if (ui.scan.imgURL) URL.revokeObjectURL(ui.scan.imgURL);
+  ui.scan.img = null; ui.scan.imgURL = null;
+}
+
+function usePhoto(img) {
+  if (ui.scan.imgURL && ui.scan.imgURL !== img.src) URL.revokeObjectURL(ui.scan.imgURL);
+  ui.scan.img = img; ui.scan.imgURL = img.src;
+  analyze(img);
+}
+
 async function setPhoto(file) {
   if (!file) return;
   try {
-    const img = await loadImage(file);
-    if (ui.scan.imgURL) URL.revokeObjectURL(ui.scan.imgURL);
-    ui.scan.img = img; ui.scan.imgURL = img.src;
-    ui.scan.current = null; ui.scan.status = null;
-    ui.scan.run++; ui.scan.busy = false;
+    usePhoto(await loadImage(file));
   } catch (e) {
     ui.scan.status = e.message; ui.scan.statusErr = true;
+    render();
   }
-  render();
 }
 
-async function openLive() {
+/** Opens the one camera: barcodes scan by themselves, the shutter takes a photo for labels and products. */
+async function openScanner() {
+  if (!liveAvailable()) { $("#cam").click(); return; }
   const box = $("#live");
   box.hidden = false;
   try {
-    ui.stopLive = await startLive($("#live-video"), (code) => {
+    ui.live = await startLive($("#live-video"), (code) => {
       closeLive();
       lookUpCode(code, "decoded");
     });
   } catch (e) {
     closeLive();
-    setStatus(e?.name === "NotAllowedError" ? "Camera access was blocked. Allow the camera for this site in your browser settings, or take a photo instead." : "The camera couldn't start. Take a photo instead.", true);
+    if (e?.name === "NotAllowedError") setStatus("Camera access was blocked. Allow the camera for this site in your browser settings, or choose a photo instead.", true);
+    else $("#cam").click();
+  }
+}
+
+async function shutter() {
+  if (!ui.live) return;
+  try {
+    const img = await ui.live.capture();
+    closeLive();
+    usePhoto(img);
+  } catch (e) {
+    toast(e.message || "Couldn't take the photo.");
   }
 }
 
 function closeLive() {
-  ui.stopLive?.();
-  ui.stopLive = null;
+  ui.live?.stop();
+  ui.live = null;
   $("#live").hidden = true;
 }
 
@@ -282,7 +360,7 @@ function recordView(rec, where) {
   return `<section class="rec" aria-label="Result" style="display:flex;flex-direction:column;gap:14px">
     ${rec.care ? careTag(rec) : ""}
     ${confidencePanel(rec)}
-    ${rec.upc ? productPanel(rec) : ""}
+    ${rec.upc || rec.product ? productPanel(rec) : ""}
     ${rec.care ? suggestionsPanel(rec, where) : ""}
     ${savePanel(rec, where)}
   </section>`;
@@ -335,7 +413,7 @@ function confidencePanel(rec) {
   const u = rec.upc;
   if (u) {
     checks.push([u.checksum === true ? "✓" : u.checksum === false ? "✕" : "?",
-      u.checksum === true ? `${u.type} check digit is valid` : u.checksum === false ? "Check digit doesn’t match — some digits are probably misread" : "Not a standard UPC/EAN length"]);
+      u.checksum === true ? `${u.type} check digit is valid` : u.checksum === false ? "Check digit doesn’t match — some digits are probably misread" : "Not a standard UPC/EAN barcode number, so Washtag searched the web for it"]);
     checks.push([u.via === "on-device decoder" ? "✓" : "·", `Digits ${u.via}`]);
     if (u.agree === true) checks.push(["✓", "Decoded bars and printed numbers agree"]);
     if (u.agree === false) checks.push(["✕", `Bars read ${u.code} but printed digits look like ${u.visualDigits || ""}`]);
@@ -355,7 +433,7 @@ function productPanel(rec) {
   const u = rec.upc, p = rec.product;
   let body = "";
   if (!p) body = `<div class="row"><span class="spin" aria-hidden="true"></span><span class="muted">Looking up…</span></div>`;
-  else if (!p.found) body = `<p><b>Not found in the product database.</b> ${p.gs1Region ? `The code prefix is registered in ${esc(p.gs1Region)}. ` : ""}Use the links below to search elsewhere.</p>`;
+  else if (!p.found) body = `<p><b>Not found in the product databases or on the web.</b> ${p.gs1Region ? `The code prefix is registered in ${esc(p.gs1Region)}. ` : ""}Use the links below to search elsewhere.</p>`;
   else {
     const meta = [p.category, p.material, p.manufacturer && p.manufacturer !== p.brand ? `Made by ${p.manufacturer}` : null, p.gs1Region ? `Registered in ${p.gs1Region}` : null].filter(Boolean);
     body = `<div class="prod">${p.imageURL ? `<img src="${esc(p.imageURL)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}
@@ -364,7 +442,7 @@ function productPanel(rec) {
       ${meta.length ? `<p class="tiny muted">${esc(meta.join(" · "))}</p>` : ""}
       ${p.careNotes?.length ? `<ul class="b small">${p.careNotes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
       ${p.detergentUse?.isLaundryProduct && p.detergentUse?.typicalDoseNote ? `<div class="note"><b>Dosing:</b> ${esc(p.detergentUse.typicalDoseNote)}</div>` : ""}
-      ${p.stores?.some((s) => s.link) ? `<b class="small">Where to buy</b>${p.stores.filter((s) => s.link).map((s) =>
+      ${p.stores?.some((s) => s.link) ? `<b class="small">${p.source === "web" ? "Sources" : "Where to buy"}</b>${p.stores.filter((s) => s.link).map((s) =>
         `<a class="small" href="${esc(s.link)}" target="_blank" rel="noopener noreferrer">${esc(s.name || "Store")}${s.price ? ` · ${esc(s.price)}` : ""} ↗</a>`).join("")}` : ""}`;
   }
   const links = [];
@@ -373,17 +451,21 @@ function productPanel(rec) {
   const q = encodeURIComponent;
   if (brand) links.push(["Manufacturer care info", `https://www.google.com/search?q=${q(`${brand} ${name} care instructions`)}`]);
   if (u?.code) {
-    links.push(["UPCitemdb", `https://www.upcitemdb.com/upc/${u.code}`]);
-    links.push(["Open Products Facts", `https://world.openproductsfacts.org/product/${u.code}`]);
-    links.push(["Web search", `https://www.google.com/search?q=${u.code}`]);
-  }
+    if (GTIN.isGood(u.code)) {
+      links.push(["UPCitemdb", `https://www.upcitemdb.com/upc/${u.code}`]);
+      links.push(["Open Products Facts", `https://world.openproductsfacts.org/product/${u.code}`]);
+    }
+    links.push(["Web search", `https://www.google.com/search?q=${q(u.code)}`]);
+  } else if (name) links.push(["Web search", `https://www.google.com/search?q=${q(`${brand || ""} ${name}`)}`]);
   const src = p?.source || "";
   const credit = src === "upcitemdb" ? "Product data from UPCitemdb."
+    : src === "web" ? "Found by a web search (Google Search, via Gemini). Check the sources above."
+    : src === "photo" ? "Read from your photo. No product database match."
     : src.includes("openproductsfacts") ? "Product data from Open Products Facts (ODbL)."
     : src.includes("openbeautyfacts") ? "Product data from Open Beauty Facts (ODbL)."
     : src.includes("openfoodfacts") ? "Product data from Open Food Facts (ODbL)." : "Searched UPCitemdb and the Open Facts databases.";
   return `<div class="panel"><h2>Product details</h2>
-    ${u ? `<p class="tiny muted mono">Barcode ${esc(u.code)} · ${esc(u.type)}</p>` : ""}
+    ${u ? `<p class="tiny muted mono">${u.type === "Item number" ? `Item number ${esc(u.code)}` : `Barcode ${esc(u.code)} · ${esc(u.type)}`}</p>` : ""}
     ${body}
     <div class="row">${links.map(([t, h]) => `<a class="ext" href="${esc(h)}" target="_blank" rel="noopener noreferrer">${t} ↗</a>`).join("")}</div>
     <p class="tiny muted">${credit}</p>
@@ -828,11 +910,9 @@ function toast(text) {
 /* ---------- events ---------- */
 
 const actions = {
-  mode: (el) => { ui.scan.mode = el.dataset.v; ui.scan.status = null; ui.scan.current = null; ui.scan.run++; ui.scan.busy = false; render(); },
-  camera: () => $("#cam").click(),
+  "scan-open": () => openScanner(),
   pick: () => $("#pick").click(),
-  live: () => openLive(),
-  scan: () => scanPhoto(),
+  retry: () => { if (ui.scan.img) analyze(ui.scan.img); },
   stop: () => { ui.scan.run++; ui.scan.busy = false; ui.scan.status = "Stopped."; ui.scan.statusErr = false; render(); },
 
   "rec-need": (el) => {
@@ -943,11 +1023,10 @@ function onInput(el) {
   if (b === "scan.typed") {
     ui.scan.typed = v;
     const hint = document.getElementById("typed-hint");
-    const d = v.replace(/\D/g, "");
     if (hint) {
-      const ok = d ? GTIN.isValid(d) : null;
-      hint.className = `tiny ${ok === false ? "bad" : "muted"}`;
-      hint.textContent = !d ? "" : ok == null ? `${d.length} digits — UPC is 12, EAN is 13 or 8` : ok ? `✓ Valid ${GTIN.type(d)} check digit` : "✕ Check digit doesn’t match — recheck the numbers";
+      const t = v.trim();
+      hint.className = `tiny ${/^\d+$/.test(t) && GTIN.isValid(t) === false ? "bad" : "muted"}`;
+      hint.textContent = typedHint(t);
     }
   } else if (b === "index.query") {
     ui.index.query = v;
@@ -1017,6 +1096,7 @@ function wire() {
   $("#pick").addEventListener("change", (e) => { setPhoto(e.target.files[0]); e.target.value = ""; });
   $("#restore").addEventListener("change", (e) => { restore(e.target.files[0]); e.target.value = ""; });
   $("#live-close").addEventListener("click", closeLive);
+  $("#live-shot").addEventListener("click", shutter);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#live").hidden) closeLive(); });
   $("#back").addEventListener("click", () => go(ui.route === "machines" ? "#household" : "#index"));
   addEventListener("hashchange", () => { closeLive(); readRoute(); render(); scrollTo({ top: 0 }); });

@@ -40,6 +40,27 @@ struct APIClient {
                               body: try JSONEncoder().encode(Body(product: record, context: context.map { String($0.prefix(300)) })))
     }
 
+    struct WebSearchResult: Decodable {
+        var found: Bool?
+        var confidence: Double?
+        var brand: String?
+        var productName: String?
+        var category: String?
+        var description: String?
+        var material: String?
+        var careNotes: [String]?
+        var basis: String?
+        var sources: [Source]?
+        struct Source: Decodable { var title: String?; var url: String? }
+    }
+
+    /// Searches the web for a code or product name that no free barcode database knows.
+    func webSearch(query: String, hint: String?) async throws -> WebSearchResult {
+        struct Body: Encodable { var code: String; var hint: String? }
+        return try await send(path: "v1/websearch", method: "POST", query: [],
+                              body: try JSONEncoder().encode(Body(code: String(query.prefix(80)), hint: hint.map { String($0.prefix(200)) })))
+    }
+
     func suggest(structured: StructuredCare?, needs: [String], fibres: String?, type: String?) async throws -> Suggestions {
         struct Body: Encodable { var structured: StructuredCare?; var needs: [String]; var fibres: String?; var type: String? }
         return try await send(path: "v1/suggest", method: "POST", query: [],

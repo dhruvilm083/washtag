@@ -169,6 +169,10 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 0; width: 100%; }
 .live .guide { position: absolute; left: 8%; right: 8%; top: 38%; height: 24%; border: 3px solid #fff; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(0,0,0,.35); pointer-events: none; }
 .live .bar2 { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 16px calc(16px + var(--safe-b)); display: flex; justify-content: space-between; align-items: center; gap: 12px; color: #fff; }
 .live .bar2 .btn { background: #fff; color: #000; border-color: #fff; }
+.live .live-spacer { width: 80px; }
+.live .shutter { width: 74px; height: 74px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 0 4px #000, 0 0 0 8px #fff; cursor: pointer; flex: none; }
+.live .shutter:active { transform: scale(.94); }
+.live .live-tip { position: absolute; left: 16px; right: 16px; top: calc(16px + env(safe-area-inset-top, 0px)); margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(0,0,0,.55); color: #fff; font-size: 14px; }
 .toast { position: fixed; left: 50%; bottom: calc(90px + var(--safe-b)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 700; z-index: 60; }
 .install { display: flex; gap: 12px; align-items: center; background: var(--tub-soft); border: 1.5px solid var(--tub); border-radius: 14px; padding: 12px 14px; font-size: 14px; }
 .install img { width: 40px; height: 40px; border-radius: 9px; flex: none; }

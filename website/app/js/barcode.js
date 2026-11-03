@@ -2,7 +2,7 @@
 // (Chrome, Android), otherwise ZXing (Safari on iPhone). Nothing leaves the device.
 
 import { toCanvas } from "./image.js";
-import { expandUPCE } from "./gtin.js";
+import { canonical, isGood } from "./gtin.js";
 
 const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e"];
 let detector;
@@ -58,33 +58,43 @@ async function zxingDecode(canvas) {
   }
 }
 
+/** A decoded payload in canonical form, or null when it isn't a retail code with a valid check digit. */
 const clean = (text) => {
   const d = String(text || "").replace(/\D/g, "");
-  return d ? expandUPCE(d) : null;
+  if (!d) return null;
+  const c = canonical(d);
+  return isGood(c) ? c : null;
 };
 
-/** Reads a barcode from a still photo, or null. */
+/** Reads a barcode from a still photo, or null. Only codes with a valid check digit count. */
 export async function decodeImage(img) {
   const det = await nativeDetector();
   if (det) {
     try {
       const found = await det.detect(img);
-      if (found.length) return clean(found[0].rawValue);
+      for (const f of found) { const c = clean(f.rawValue); if (c) return c; }
     } catch { /* fall through to ZXing */ }
   }
   try {
-    for (const side of [1400, 900]) {
-      const hit = await zxingDecode(toCanvas(img, side));
-      if (hit) return clean(hit);
+    for (const side of [1400, 900, 2000]) {
+      const hit = clean(await zxingDecode(toCanvas(img, side)));
+      if (hit) return hit;
     }
   } catch { /* reader unavailable */ }
   return null;
 }
 
-/** Live camera scanning. Calls onCode once with the first barcode it reads. Returns a stop function. */
+/** Reads needed of the same code before live scanning accepts it, and how far ahead of any other code it must be. */
+const NEEDED = 3;
+const LEAD = 2;
+
+/**
+ * Live camera scanning. Calls onCode once, when the same valid barcode has been read several times
+ * (one glimpse is often misread). Returns { stop, capture }, where capture() resolves to a still photo.
+ */
 export async function startLive(video, onCode) {
   const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false,
+    video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false,
   });
   video.srcObject = stream;
   video.setAttribute("playsinline", "");
@@ -95,31 +105,51 @@ export async function startLive(video, onCode) {
   const stop = () => { stopped = true; stream.getTracks().forEach((t) => t.stop()); video.srcObject = null; };
   const det = await nativeDetector();
   const canvas = document.createElement("canvas");
+  const votes = new Map();
 
   const tick = async () => {
     if (stopped) return;
-    let code = null;
+    const seen = [];
     try {
       if (det) {
-        const found = await det.detect(video);
-        if (found.length) code = clean(found[0].rawValue);
+        for (const f of await det.detect(video)) { const c = clean(f.rawValue); if (c) seen.push(c); }
       } else if (video.videoWidth) {
         // Read the middle band of the frame, where the guide box is.
         const w = video.videoWidth, h = video.videoHeight;
-        const cw = Math.min(w, 960), ch = Math.round(cw * 0.5);
+        const cw = Math.min(w, 1280), ch = Math.round(cw * 0.5);
         const sx = (w - cw) / 2, sy = Math.max(0, (h - ch) / 2);
         canvas.width = cw; canvas.height = Math.min(ch, h);
         canvas.getContext("2d", { willReadFrequently: true }).drawImage(video, sx, sy, cw, canvas.height, 0, 0, cw, canvas.height);
-        code = clean(await zxingDecode(canvas));
+        const c = clean(await zxingDecode(canvas));
+        if (c) seen.push(c);
       }
     } catch { /* keep trying */ }
     if (stopped) return;
-    if (code && code.length >= 8) { stop(); onCode(code); return; }
-    setTimeout(tick, det ? 150 : 250);
+    for (const c of new Set(seen)) votes.set(c, (votes.get(c) || 0) + 1);
+    const ranked = [...votes.entries()].sort((a, b) => b[1] - a[1]);
+    if (ranked.length && ranked[0][1] >= NEEDED && (ranked.length < 2 || ranked[0][1] - ranked[1][1] >= LEAD)) {
+      stop(); onCode(ranked[0][0]); return;
+    }
+    setTimeout(tick, det ? 120 : 200);
   };
   if (!det) await loadZXing();
   tick();
-  return stop;
+
+  /** Grabs the current frame as an image, for care labels and products. */
+  const capture = () => new Promise((resolve, reject) => {
+    if (!video.videoWidth) return reject(new Error("The camera isn't ready yet."));
+    const c = document.createElement("canvas");
+    c.width = video.videoWidth; c.height = video.videoHeight;
+    c.getContext("2d").drawImage(video, 0, 0);
+    c.toBlob((blob) => {
+      if (!blob) return reject(new Error("Couldn't take the photo."));
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Couldn't take the photo."));
+      img.src = URL.createObjectURL(blob);
+    }, "image/jpeg", 0.92);
+  });
+  return { stop, capture };
 }
 
 export const liveAvailable = () => !!navigator.mediaDevices?.getUserMedia && window.isSecureContext;

@@ -50,11 +50,13 @@
 <input type="file" id="pick" accept="image/*" class="sr" tabindex="-1" aria-hidden="true">
 <input type="file" id="restore" accept="application/json,.json" class="sr" tabindex="-1" aria-hidden="true">
 
-<div class="live" id="live" hidden role="dialog" aria-modal="true" aria-label="Scan a barcode with the camera">
+<div class="live" id="live" hidden role="dialog" aria-modal="true" aria-label="Scan with the camera">
   <video id="live-video" playsinline muted></video>
   <div class="guide"></div>
+  <p class="live-tip">Point at a barcode, care label or product. Barcodes scan by themselves. For labels and products, tap the shutter.</p>
   <div class="bar2">
-    <span>Line the barcode up inside the box.</span>
+    <span class="live-spacer"></span>
+    <button class="shutter" type="button" id="live-shot" aria-label="Take photo of label or product"></button>
     <button class="btn" type="button" id="live-close">Cancel</button>
   </div>
 </div>

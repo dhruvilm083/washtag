@@ -10,6 +10,31 @@ export function isValid(code) {
   return (10 - (sum % 10)) % 10 === check;
 }
 
+/** True only for a standard-length code whose check digit matches. */
+export const isGood = (code) => isValid(String(code || "")) === true;
+
+/** One spelling per product: UPC-E expanded, and EAN-13 / GTIN-14 with leading zeros shortened to UPC-A. */
+export function canonical(raw) {
+  let d = String(raw || "").replace(/\D/g, "");
+  if (d.length === 8 && !isGood(d)) d = expandUPCE(d);
+  if (d.length === 14 && d.startsWith("00")) d = d.slice(2);
+  if (d.length === 13 && d.startsWith("0")) d = d.slice(1);
+  return d;
+}
+
+/** Other spellings of the same code that a database might store it under. */
+export const variants = (code) => (code.length === 12 ? [code, "0" + code] : [code]);
+
+/** Barcode numbers (valid check digit) in a line of text, e.g. "0 12345 67890 5". */
+export function codesInText(text) {
+  const out = [];
+  for (const run of String(text || "").match(/\d(?:[ -]?\d)*/g) || []) {
+    const d = run.replace(/\D/g, "");
+    if ([8, 12, 13, 14].includes(d.length) && isGood(d)) { const c = canonical(d); if (!out.includes(c)) out.push(c); }
+  }
+  return out;
+}
+
 export function type(code) {
   return { 8: "EAN-8", 12: "UPC-A", 13: "EAN-13", 14: "GTIN-14" }[code.length] || "Unknown";
 }

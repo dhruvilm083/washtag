@@ -11,6 +11,103 @@ enum GTIN {
         return (10 - sum % 10) % 10 == check
     }
 
+    /// True only for a standard-length code whose check digit matches.
+    static func isGood(_ code: String) -> Bool { isValid(code) == true }
+
+    /// One spelling per product, so the same barcode always looks up the same way:
+    /// UPC-E is expanded to UPC-A, and EAN-13 / GTIN-14 with leading zeros become the 12-digit UPC-A.
+    static func canonical(_ raw: String, isUPCE: Bool = false) -> String {
+        var d = raw.filter(\.isNumber)
+        if isUPCE || (d.count == 8 && d.first == "0" && isValid(d) != true && expandUPCE(d).map(isGood) == true) {
+            if let full = expandUPCE(d) { d = full }
+        }
+        if d.count == 14 && d.hasPrefix("00") { d = String(d.dropFirst(2)) }
+        if d.count == 13 && d.hasPrefix("0") { d = String(d.dropFirst()) }
+        return d
+    }
+
+    /// Other spellings of the same code that a database might store it under.
+    static func variants(_ code: String) -> [String] {
+        var out = [code]
+        if code.count == 12 { out.append("0" + code) }
+        return out
+    }
+
+    /// Expands an 8-digit UPC-E (number system 0 or 1, six digits, check digit) to its 12-digit UPC-A.
+    static func expandUPCE(_ code: String) -> String? {
+        var d = code.filter(\.isNumber)
+        if d.count == 6 { d = "0" + d + "?" }
+        if d.count == 7 { d = d + "?" }
+        guard d.count == 8 else { return nil }
+        let chars = Array(d)
+        let ns = chars[0]
+        guard ns == "0" || ns == "1" else { return nil }
+        let m = chars[1...6].map { String($0) }
+        let last = m[5]
+        var body: String
+        switch last {
+        case "0", "1", "2": body = m[0] + m[1] + last + "0000" + m[2] + m[3] + m[4]
+        case "3": body = m[0] + m[1] + m[2] + "00000" + m[3] + m[4]
+        case "4": body = m[0] + m[1] + m[2] + m[3] + "00000" + m[4]
+        default: body = m[0] + m[1] + m[2] + m[3] + m[4] + "0000" + last
+        }
+        body = String(ns) + body
+        let check = String(chars[7])
+        let computed = checkDigit(body)
+        if check == "?" { return body + computed }
+        return check == computed ? body + check : nil
+    }
+
+    /// The GS1 check digit for the digits given (without their check digit).
+    static func checkDigit(_ body: String) -> String {
+        let digits = body.compactMap { $0.wholeNumberValue }
+        var sum = 0
+        for (i, n) in digits.reversed().enumerated() { sum += n * (i % 2 == 0 ? 3 : 1) }
+        return String((10 - sum % 10) % 10)
+    }
+
+    /// Finds barcode numbers in text read off a photo, e.g. "0 12345 67890 5" or "4006381333931".
+    /// Only standard lengths with a matching check digit are returned.
+    static func codes(inText text: String) -> [String] {
+        var out: [String] = []
+        for run in digitRuns(text) where [8, 12, 13, 14].contains(run.count) && isGood(run) {
+            let c = canonical(run)
+            if !out.contains(c) { out.append(c) }
+        }
+        return out
+    }
+
+    /// Longer number strings that could be an item, style or SKU number (6 to 14 digits),
+    /// for when there's no proper barcode number.
+    static func itemNumbers(inText text: String) -> [String] {
+        var out: [String] = []
+        for run in digitRuns(text) where run.count >= 6 && run.count <= 14 && !isGood(run) {
+            if !out.contains(run) { out.append(run) }
+        }
+        return out
+    }
+
+    /// Digit runs, allowing single spaces or hyphens between groups (how barcodes print their numbers).
+    private static func digitRuns(_ text: String) -> [String] {
+        var runs: [String] = []
+        var current = ""
+        var pendingGap = false
+        for ch in text {
+            if ch.isNumber && ch.isASCII {
+                current.append(ch)
+                pendingGap = false
+            } else if (ch == " " || ch == "-") && !current.isEmpty && !pendingGap {
+                pendingGap = true
+            } else {
+                if !current.isEmpty { runs.append(current) }
+                current = ""
+                pendingGap = false
+            }
+        }
+        if !current.isEmpty { runs.append(current) }
+        return runs
+    }
+
     static func type(_ code: String) -> String {
         [8: "EAN-8", 12: "UPC-A", 13: "EAN-13", 14: "GTIN-14"][code.count] ?? "Unknown"
     }
