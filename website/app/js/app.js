@@ -508,6 +508,7 @@ function machinesSummary() {
   return `<a class="machines" href="#machines">${ICON.washer}
     <span style="flex:1;min-width:0"><b>Your washer &amp; dryer</b><br>
     <span class="tiny muted">${!w && !d ? "Add your models so Washtag recommends settings for your machines."
+      : Appl.isCombo(w) ? esc(`Washer-dryer combo: ${Appl.title(w)}`)
       : esc([w && `Washer: ${Appl.title(w)}`, d && `Dryer: ${Appl.title(d)}`].filter(Boolean).join(" · "))}</span></span>
     <span class="chev" aria-hidden="true">›</span></a>`;
 }
@@ -613,7 +614,7 @@ function sortPlan(items) {
       <h2 class="h" style="font-size:21px;font-weight:800">Washtag recommends ${plural(p.loads.length, "load")}</h2>
       ${p.totalMinutes > 0 ? `<p class="small muted">About ${duration(p.totalMinutes)} from first wash to last dry.</p>` : ""}
       ${p.orderWhy.map((w) => `<p class="small muted">${esc(w)}</p>`).join("")}
-      ${!store.washer || !store.dryer ? `<p class="tiny muted">Using typical machine specs — <a href="#machines">add your washer and dryer</a> for settings that match them.</p>` : ""}
+      ${!store.washer || (!store.dryer && !Appl.isCombo(store.washer)) ? `<p class="tiny muted">Using typical machine specs — <a href="#machines">add your washer and dryer</a> for settings that match them.</p>` : ""}
     </div>
     ${p.notForMachine.length ? `<div class="warn"><b>Keep out of the machine:</b> ${esc(p.notForMachine.join("; "))}.</div>` : ""}
     ${p.loads.map((l, i) => loadCard(i + 1, p.loads.length, l)).join("")}`;
@@ -709,7 +710,9 @@ async function restore(file) {
 
 function viewMachines() {
   return `<p class="small muted">Add your machines and Washtag recommends cycles, load sizes and detergent that match them. Specs from a lookup show how sure they are — check them against your manual or the sticker inside the door.</p>
-    ${applianceSection("washer")}${applianceSection("dryer")}`;
+    ${applianceSection("washer")}${Appl.isCombo(applianceShown("washer"))
+      ? `<section class="panel"><h2>Dryer</h2><p class="small muted">Your washer-dryer combo dries too, so Washtag plans drying in the same drum. You don’t need to add a separate dryer.</p></section>`
+      : applianceSection("dryer")}`;
 }
 
 const applianceShown = (kind) => ui.machines[kind] || store[kind] || Appl.typical(kind, kind === "washer" ? "front" : "electric");

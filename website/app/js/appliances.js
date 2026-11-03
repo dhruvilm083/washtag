@@ -1,6 +1,6 @@
 // Washer and dryer specs (shape matches appliancePrompt in the backend). Port of Appliances.swift.
 
-export const WASHER_TYPES = [["front", "Front loader"], ["top_he", "Top loader (HE, no agitator)"], ["top_agitator", "Top loader with agitator"]];
+export const WASHER_TYPES = [["front", "Front loader"], ["top_he", "Top loader (HE, no agitator)"], ["top_agitator", "Top loader with agitator"], ["combo", "Washer-dryer combo"]];
 export const DRYER_TYPES = [["electric", "Electric vented"], ["gas", "Gas"], ["heat_pump", "Heat pump"], ["condenser", "Condenser"]];
 export const TYPE_NAMES = Object.fromEntries([...WASHER_TYPES, ...DRYER_TYPES]);
 
@@ -12,6 +12,12 @@ function base(kind, type, extra) {
 /** Built-in specs for when the model can't be looked up. Typical for the type, not for a specific machine. */
 export function typical(kind, type) {
   if (kind === "washer") {
+    if (type === "combo") return base(kind, type, { capacityCuFt: 2.8, capacityKg: 6.5, detergent: "he", maxSpinRpm: 1200, hasHeater: true, sensorDry: true, steam: false,
+      cycles: ["Normal", "Cotton", "Bulky / Bedding", "Towels", "Perm Press", "Delicates", "Wool", "Quick Wash", "Wash + Dry", "Dry Only", "Rinse & Spin"],
+      tips: ["Use HE detergent only, and a little less than for a full-size washer.",
+        "To wash and dry in one go, fill the drum only about half full — it dries less than it washes.",
+        "Drying takes longer than in a separate dryer because most combos condense the moisture instead of venting it.",
+        "Clean the lint filter and leave the door ajar after each run."] });
     if (type === "top_he") return base(kind, type, { capacityCuFt: 5.0, capacityKg: 11, detergent: "he", maxSpinRpm: 800, hasHeater: false, steam: false,
       cycles: ["Normal", "Heavy Duty", "Bulky / Bedding", "Whites", "Towels", "Perm Press", "Delicates", "Hand Wash", "Quick Wash", "Rinse & Spin"],
       tips: ["Use HE detergent only, and no more than the cap's line 1 or 2 — extra suds stop the low-water rinse working.",
@@ -55,6 +61,15 @@ export function capacityKg(a) {
 export function title(a) {
   const t = [a.brand, a.model].filter(Boolean).join(" ");
   return t || TYPE_NAMES[a.type] || a.type;
+}
+
+/** A washer-dryer combo washes and dries in the same drum, so it is both machines. */
+export const isCombo = (a) => !!a && a.kind === "washer" && a.type === "combo";
+
+/** The drying half of a combo. Combos dry only about 60% of what they wash. */
+export function comboDryer(w) {
+  return { ...base("dryer", "combo", { capacityKg: capacityKg(w) * 0.6, sensorDry: true, steam: w.steam ?? false }),
+    brand: w.brand, model: w.model, cycles: [...(w.cycles || [])] };
 }
 
 export const isHE = (a) => a.kind === "washer" && (a.detergent ?? (a.type === "top_agitator" ? "standard" : "he")) === "he";

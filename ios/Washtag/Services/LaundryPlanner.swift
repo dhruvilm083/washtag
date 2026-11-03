@@ -51,7 +51,9 @@ enum LaundryPlanner {
 
     static func plan(_ items: [ScanRecord], washer: Appliance?, dryer: Appliance?, units: Units) -> Plan {
         let washer = washer ?? Appliance.typical(.washer, type: "front")
-        let dryer = dryer ?? Appliance.typical(.dryer, type: "electric")
+        // A washer-dryer combo is both machines, so any separate dryer is ignored.
+        let combo: Bool = washer.isCombo
+        let dryer: Appliance = combo ? washer.comboDryer : (dryer ?? Appliance.typical(.dryer, type: "electric"))
         var notForMachine: [String] = []
         var groups: [Group] = []
 
@@ -67,6 +69,8 @@ enum LaundryPlanner {
 
         // Merge small groups into the closest compatible one, so the plan doesn't run lots of tiny loads.
         let cap = washer.capacityKgEstimate
+        // A combo can only wash and dry in one go when the load fits what it dries.
+        let comboLimit: Double = dryer.capacityKgEstimate * 0.85
         while true {
             let small = groups.indices.filter { groups[$0].kg < cap * target(groups[$0]) * 0.4 }
                 .sorted { groups[$0].kg < groups[$1].kg }
@@ -96,7 +100,8 @@ enum LaundryPlanner {
         // Split anything bigger than the drum should take.
         var split: [Group] = []
         for g in groups {
-            let limit = cap * target(g)
+            var limit: Double = cap * target(g)
+            if combo { limit = min(limit, comboLimit) }
             var chunk = g; chunk.items = []
             for it in g.items.sorted(by: { weight($0) > weight($1) }) {
                 if !chunk.items.isEmpty && chunk.kg + weight(it) > limit {
@@ -108,7 +113,7 @@ enum LaundryPlanner {
         }
 
         var loads = split.map { load($0, washer: washer, dryer: dryer, units: units) }
-        loads = order(loads)
+        loads = combo ? comboOrder(loads) : order(loads)
 
         // Number repeated titles: "Darks 1", "Darks 2".
         let titles = loads.map(\.title)
@@ -118,14 +123,29 @@ enum LaundryPlanner {
 
         var t = 0, dryerFree = 0
         for l in loads {
-            t += l.washMinutes
-            if l.dry.minutes > 0 { dryerFree = max(dryerFree, t) + l.dry.minutes }
+            if combo {
+                // One drum: each load washes, then dries, before the next one starts.
+                t += l.washMinutes + l.dry.minutes
+            } else {
+                t += l.washMinutes
+                if l.dry.minutes > 0 { dryerFree = max(dryerFree, t) + l.dry.minutes }
+            }
         }
         var why: [String] = []
-        if loads.count > 1 {
+        if combo {
+            if loads.count > 1 {
+                why.append("Your washer-dryer combo washes and dries in the same drum, so loads run one after another. Washtag recommends running the air-dry loads first so they dry on the rack while the machine works through the rest.")
+            }
+            var dryText: String = "\(Int(comboLimit.rounded())) kg"
+            if units == .us {
+                let pounds: Double = comboLimit * 2.2
+                dryText = "\(Int(pounds.rounded())) lb"
+            }
+            why.append("Washtag keeps each load to about \(dryText), what your combo can dry, so every load can wash and dry in one go without unloading.")
+        } else if loads.count > 1 {
             why.append("Washtag recommends this order so your dryer is busy while the next load washes: quick-washing, slow-drying loads go first and air-dry loads go last.")
         }
-        if loads.contains(where: { $0.dry.dryerLoads > 1 }) {
+        if !combo && loads.contains(where: { $0.dry.dryerLoads > 1 }) {
             why.append("Your dryer holds less than a full wash, so Washtag recommends drying the bigger loads in two goes for even drying.")
         }
         return Plan(loads: loads, notForMachine: notForMachine, totalMinutes: max(t, dryerFree), orderWhy: why)
@@ -136,6 +156,16 @@ enum LaundryPlanner {
         let first = loads.filter { $0.washMinutes < $0.dry.minutes }.sorted { $0.washMinutes < $1.washMinutes }
         let second = loads.filter { $0.washMinutes >= $0.dry.minutes }.sorted { $0.dry.minutes > $1.dry.minutes }
         return first + second
+    }
+
+    /// With one drum the total time is fixed, so start the loads that air-dry (or barely tumble) first:
+    /// they dry on the rack while the machine keeps going.
+    private static func comboOrder(_ loads: [PlannedLoad]) -> [PlannedLoad] {
+        loads.enumerated().sorted { a, b in
+            let x: Int = a.element.dry.minutes
+            let y: Int = b.element.dry.minutes
+            return x == y ? a.offset < b.offset : x < y
+        }.map { $0.element }
     }
 
     private static func target(_ g: Group) -> Double {
@@ -177,7 +207,7 @@ enum LaundryPlanner {
         let fill = kg / washer.capacityKgEstimate
         let size = fill < 0.35 ? "small" : fill < 0.6 ? "medium" : fill < 0.85 ? "large" : "xl"
         let delicate = g.care.rawValue >= Care.gentle.rawValue || ["gentle", "hand"].contains(c.cycle)
-        let isFront = washer.type == "front"
+        let isFront: Bool = washer.type == "front" || washer.isCombo
 
         let wantCycle: [String]
         switch c.cycle {
@@ -208,7 +238,7 @@ enum LaundryPlanner {
         // Drying: items that can't tumble come out first; the rest share the strictest heat.
         let tumbleItems = g.items.filter { $0.care?.structured?.tumble != "none" }
         let tc = LoadPlanner.combine(tumbleItems, units: units)
-        let speeds: [String: Double] = ["heat_pump": 1.6, "condenser": 1.3]
+        let speeds: [String: Double] = ["heat_pump": 1.6, "condenser": 1.3, "combo": 1.8]
         let speed: Double = speeds[dryer.type] ?? 1
         var dryMinutes = 0, dryerLoads = 0
         var setting = "Nothing in this load goes in the dryer."
@@ -217,7 +247,8 @@ enum LaundryPlanner {
             dryerLoads = Int((tumbleKg / (dryer.capacityKgEstimate * 0.85)).rounded(.up))
             let low = tc.tumble == "low" || delicate
             let want: [String] = low ? ["delicate", "low", "perm", "synthetic"] : g.towels ? ["towel", "heavy", "bulky", "normal"] : c.cycle == "permanent_press" ? ["perm", "synthetic", "casual", "normal"] : ["normal", "cotton", "regular"]
-            let name = machineCycle(dryer.cycles, want) ?? (low ? "Delicates / low heat" : "Normal")
+            let comboName: String? = dryer.type == "combo" ? machineCycle(dryer.cycles, ["wash + dry", "wash & dry", "wash and dry", "dry only", "dry"]) : nil
+            let name = comboName ?? machineCycle(dryer.cycles, want) ?? (low ? "Delicates / low heat" : "Normal")
             let base: Double = low ? 35 : (g.towels ? 60 : (c.cycle == "permanent_press" ? 40 : 50))
             dryMinutes = Int(base * speed * max(1.0, Double(dryerLoads)))
             let heat: String = low ? "low" : (g.towels ? "high" : "medium")
@@ -228,7 +259,15 @@ enum LaundryPlanner {
         }
 
         var notes = g.notes
-        if !c.airDry.isEmpty && !tumbleItems.isEmpty { notes.append("Washtag recommends pulling the air-dry items out before the rest go in the dryer.") }
+        if dryer.type == "combo" {
+            if !c.airDry.isEmpty && !tumbleItems.isEmpty {
+                notes.append("Washtag recommends a wash-only cycle first, then pulling out the air-dry items and running Dry on the rest.")
+            } else if !tumbleItems.isEmpty {
+                notes.append("Everything here can tumble, so Washtag recommends one Wash + Dry cycle that runs straight through.")
+            }
+        } else if !c.airDry.isEmpty && !tumbleItems.isEmpty {
+            notes.append("Washtag recommends pulling the air-dry items out before the rest go in the dryer.")
+        }
         if g.colour == .darks { notes.append("Turn darks and jeans inside out and wash cold to keep the colour.") }
         if g.towels { notes.append("Skip fabric softener on towels — it makes them less absorbent.") }
         if delicate && washer.type == "top_agitator" { notes.append("Your agitator can snag delicates — use a mesh laundry bag.") }
