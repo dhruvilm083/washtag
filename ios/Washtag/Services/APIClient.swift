@@ -78,13 +78,15 @@ struct APIClient {
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
-            struct Wrapper: Decodable { struct E: Decodable { var code: String; var message: String }; var error: E }
-            if let w = try? JSONDecoder().decode(Wrapper.self, from: data) { throw APIError(code: w.error.code, message: w.error.message) }
+            if let w = try? JSONDecoder().decode(ErrorBody.self, from: data) { throw APIError(code: w.error.code, message: w.error.message) }
             throw APIError(code: "http_\(status)", message: "Something went wrong (\(status)). Try again.")
         }
         do { return try JSONDecoder().decode(T.self, from: data) }
         catch { throw APIError(code: "invalid_json", message: "The answer came back garbled. Try again.") }
     }
+
+    /// The server's error shape. Declared here because Swift can't nest types inside a generic function.
+    private struct ErrorBody: Decodable { struct E: Decodable { var code: String; var message: String }; var error: E }
 
     private func jpegBase64(_ image: UIImage) throws -> String {
         guard let data = image.resized(maxSide: 1800).jpegData(compressionQuality: 0.85) else {
