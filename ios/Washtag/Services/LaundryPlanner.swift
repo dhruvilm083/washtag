@@ -193,9 +193,13 @@ enum LaundryPlanner {
 
         let rpm = washer.maxSpinRpm
         let spin: String
-        if delicate { spin = "Low" + (rpm.map { " (about \(min($0, 800)) rpm or less)" } ?? "") }
-        else if c.cycle == "permanent_press" { spin = "Medium" + (rpm.map { " (about \(min($0, 1000)) rpm)" } ?? "") + " to limit creases" }
-        else { spin = "High" + (rpm.map { " (up to \($0) rpm)" } ?? "") + " so it dries faster" }
+        if delicate {
+            spin = rpm == nil ? "Low" : "Low (about \(min(rpm!, 800)) rpm or less)"
+        } else if c.cycle == "permanent_press" {
+            spin = (rpm == nil ? "Medium" : "Medium (about \(min(rpm!, 1000)) rpm)") + " to limit creases"
+        } else {
+            spin = (rpm == nil ? "High" : "High (up to \(rpm!) rpm)") + " so it dries faster"
+        }
 
         let washTimes: [String: Int] = ["hand": 35, "gentle": 40, "permanent_press": 50]
         var washMinutes: Int = washTimes[c.cycle] ?? (g.towels ? 65 : 55)
@@ -216,7 +220,10 @@ enum LaundryPlanner {
             let name = machineCycle(dryer.cycles, want) ?? (low ? "Delicates / low heat" : "Normal")
             let base: Double = low ? 35 : (g.towels ? 60 : (c.cycle == "permanent_press" ? 40 : 50))
             dryMinutes = Int(base * speed * max(1.0, Double(dryerLoads)))
-            setting = "\(name) · \(low ? "low" : g.towels ? "high" : "medium") heat" + (dryer.sensorDry == false ? ", timed about \(Int(base * speed)) min" : ", sensor dry")
+            let heat: String = low ? "low" : (g.towels ? "high" : "medium")
+            let timedMinutes: Int = Int(base * speed)
+            let how: String = dryer.sensorDry == false ? ", timed about \(timedMinutes) min" : ", sensor dry"
+            setting = name + " · " + heat + " heat" + how
             if dryerLoads > 1 { setting += " · in \(dryerLoads) batches" }
         }
 
